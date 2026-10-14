@@ -1,137 +1,563 @@
 
-let current={},dirty=false;const pendingFiles=new Map(),$=s=>document.querySelector(s);
-const E=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
-const B=v=>typeof v==="boolean"?v:!["false","0","off","no",""].includes(String(v??"").trim().toLowerCase());
-const C=x=>JSON.parse(JSON.stringify(x));
-function D(v=true){dirty=v;$("#dirty")?.classList.toggle("show",v)}function S(t,e=false){let x=$("#status");x.textContent=t;x.className="status show"+(e?" err":"");clearTimeout(window._st);window._st=setTimeout(()=>x.className="status",5000)}
-function field(k,l,t){let f=document.createElement("div");f.className="field "+(["textarea","html","image"].includes(t)?"full":"");f.innerHTML=`<label>${E(l)}</label><small>${E(k)}</small>`;
- if(t==="toggle"){let r=document.createElement("div");r.className="toggle-row";let tx=document.createElement("span");tx.textContent=B(current[k])?"표시":"숨김";let b=document.createElement("button");b.type="button";b.className="switch "+(B(current[k])?"on":"");b.onclick=()=>{let on=!b.classList.contains("on");b.classList.toggle("on",on);tx.textContent=on?"표시":"숨김";current[k]=on;D()};r.append(tx,b);f.append(r);return f}
- if(t==="color"){let w=document.createElement("div");w.className="color-wrap";let c=document.createElement("input");c.type="color";c.value=current[k]||"#17372f";let x=document.createElement("input");x.value=current[k]||"#17372f";x.dataset.key=k;c.oninput=()=>{x.value=c.value;current[k]=c.value;D()};x.oninput=()=>{current[k]=x.value;if(/^#[0-9a-fA-F]{6}$/.test(x.value))c.value=x.value;D()};w.append(c,x);f.append(w);return f}
- if(t==="number"){let x=document.createElement("input");x.type="number";x.min="10";x.max="140";x.value=current[k]??"";x.dataset.key=k;x.oninput=()=>{current[k]=Number(x.value);D()};f.append(x);return f}
- if(t==="image"){let box=document.createElement("div");box.className="image-field";let p=document.createElement("div");p.className="image-preview";let im=document.createElement("img");im.src=current[k]||"";p.append(im);let ctr=document.createElement("div");ctr.className="image-controls";let x=document.createElement("input");x.value=current[k]||"";x.dataset.key=k;let fi=document.createElement("input");fi.type="file";fi.accept="image/*";let h=document.createElement("div");h.className="image-help";h.textContent="경로를 직접 바꾸거나 새 이미지를 선택할 수 있습니다.";x.oninput=()=>{current[k]=x.value;im.src=x.value;D()};fi.onchange=()=>{let q=fi.files?.[0];if(!q)return;pendingFiles.set(k,q);im.src=URL.createObjectURL(q);h.textContent="새 이미지 선택됨 · 저장 시 함께 업로드";D()};ctr.append(x,fi,h);box.append(p,ctr);f.append(box);return f}
- let x=(t==="textarea"||t==="html")?document.createElement("textarea"):document.createElement("input");x.value=current[k]??"";x.dataset.key=k;x.oninput=()=>{current[k]=x.value;D()};f.append(x);return f}
-function fresh(){return{id:"store-"+Date.now(),visible:true,region:"REGION",name:"신규 매장",desc:"매장 설명을 입력해주세요.",image:"assets/images/brand-shelf.webp",address:"주소 입력",hours:"영업시간 입력",phone:"",map_url:"",tags:["만화","OTT"]}}
-function stores(){let h=$("#storeManager");if(!h)return;h.innerHTML="";(current["stores.items"]||[]).forEach((s,i)=>{let c=document.createElement("div");c.className="store-edit-card";c.innerHTML=`<div class="store-edit-top"><div class="store-edit-title"><span class="store-index">${i+1}</span><span>${E(s.name)}</span></div><div class="store-actions"><button data-up>↑ 위로</button><button data-down>↓ 아래로</button><button class="danger" data-del>삭제</button></div></div><div class="store-fields"><div><label>노출 여부</label><div class="store-visible-row"><input type="checkbox" data-f="visible" ${B(s.visible)?"checked":""}> 홈페이지에 표시</div></div><div><label>지역 표기</label><input data-f="region" value="${E(s.region)}"></div><div><label>매장명</label><input data-f="name" value="${E(s.name)}"></div><div><label>전화번호</label><input data-f="phone" value="${E(s.phone)}"></div><div class="wide"><label>매장 설명</label><textarea data-f="desc">${E(s.desc)}</textarea></div><div><label>주소</label><input data-f="address" value="${E(s.address)}"></div><div><label>영업시간</label><input data-f="hours" value="${E(s.hours)}"></div><div><label>지도 링크</label><input data-f="map_url" value="${E(s.map_url)}"></div><div><label>태그</label><input data-f="tags" value="${E((s.tags||[]).join(", "))}"></div><div class="wide"><label>매장 이미지</label><div class="store-image-row"><div class="store-image-preview"><img data-img src="${E(s.image)}"></div><div class="store-image-controls"><input data-f="image" value="${E(s.image)}"><input type="file" accept="image/*" data-file></div></div></div></div>`;
- c.querySelectorAll("[data-f]").forEach(x=>{let k=x.dataset.f,ev=k==="visible"?"change":"input";x.addEventListener(ev,()=>{s[k]=k==="visible"?x.checked:k==="tags"?x.value.split(",").map(v=>v.trim()).filter(Boolean):x.value;if(k==="name")c.querySelector(".store-edit-title span:last-child").textContent=s.name;if(k==="image")c.querySelector("[data-img]").src=s.image;D()})});c.querySelector("[data-file]").onchange=e=>{let q=e.target.files?.[0];if(!q)return;pendingFiles.set("stores.items."+s.id+".image",q);c.querySelector("[data-img]").src=URL.createObjectURL(q);D()};c.querySelector("[data-del]").onclick=()=>{if(confirm(`'${s.name}'을 삭제할까요?`)){current["stores.items"].splice(i,1);stores();D()}};c.querySelector("[data-up]").onclick=()=>{if(i>0){let a=current["stores.items"];[a[i-1],a[i]]=[a[i],a[i-1]];stores();D()}};c.querySelector("[data-down]").onclick=()=>{let a=current["stores.items"];if(i<a.length-1){[a[i+1],a[i]]=[a[i],a[i+1]];stores();D()}};h.append(c)})}
-function render(d){current=Object.assign({},window.DODO_DEFAULT_CONTENT||{},C(d||{}));if(!Array.isArray(current["stores.items"]))current["stores.items"]=[];pendingFiles.clear();D(false);let r=$("#groups"),side=$("#sideLinks");r.innerHTML="";side.innerHTML="";let i=0;Object.entries(window.DODO_SCHEMA).forEach(([n,fs])=>{let id="g"+i++,b=document.createElement("button");b.className="side-link";b.textContent=n;b.onclick=()=>document.getElementById(id).scrollIntoView({behavior:"smooth"});side.append(b);let g=document.createElement("section");g.className="group";g.id=id;g.innerHTML=`<div class="gh"><h2>${E(n)}</h2><span>${fs.length}개 항목</span></div><div class="fields"></div>`;fs.forEach(x=>g.querySelector(".fields").append(field(...x)));r.append(g)});let b=document.createElement("button");b.className="side-link";b.textContent="매장 추가 / 관리";b.onclick=()=>$("#storeGroup").scrollIntoView({behavior:"smooth"});side.append(b);let g=document.createElement("section");g.className="store-manager";g.id="storeGroup";g.innerHTML=`<div class="store-manager-head"><div><h2>매장 추가 / 관리</h2><div style="font-size:10px;color:#7d8580;margin-top:3px">신규 매장은 원하는 만큼 계속 추가할 수 있습니다.</div></div><button id="addStore" class="add-store-btn">+ 신규 매장 추가</button></div><div id="storeManager" class="store-list"></div>`;r.append(g);$("#addStore").onclick=()=>{current["stores.items"].push(fresh());stores();D()};stores()}
-async function load(){let d=window.DODO_DEFAULT_CONTENT||{};if(location.protocol!=="file:"){try{let r=await fetch("content.json?_="+Date.now(),{cache:"no-store"});if(r.ok)d=await r.json()}catch(e){}}render(d)}
-function collect(){let d=C(current);document.querySelectorAll("[data-key]").forEach(x=>d[x.dataset.key]=x.type==="number"?Number(x.value):x.value);return d}
-function b64(ab){let a=new Uint8Array(ab),s="";for(let i=0;i<a.length;i+=32768)s+=String.fromCharCode(...a.subarray(i,Math.min(i+32768,a.length)));return btoa(s)}function tb(s){return btoa(unescape(encodeURIComponent(s)))}function nm(n){let e=(n.split(".").pop()||"jpg").replace(/[^a-zA-Z0-9]/g,"")||"jpg";return"cms-"+Date.now()+"-"+Math.random().toString(36).slice(2,7)+"."+e}
-async function meta(api,br,h){let r=await fetch(api+"?ref="+encodeURIComponent(br),{headers:h});if(r.status===404)return null;if(!r.ok)throw Error("GitHub 파일 확인 실패");return r.json()}async function put(api,br,h,c,msg,sha){let o={message:msg,content:c,branch:br};if(sha)o.sha=sha;let r=await fetch(api,{method:"PUT",headers:{...h,"Content-Type":"application/json"},body:JSON.stringify(o)});if(!r.ok)throw Error("GitHub 저장 실패");return r.json()}
-async function save(){
-  let token=$("#token").value.trim(),
-      owner=$("#owner").value.trim(),
-      repo=$("#repo").value.trim(),
-      br=$("#branch").value.trim()||"main";
+let current = {};
+let dirty = false;
+const pendingFiles = new Map();
+const $ = (s) => document.querySelector(s);
 
-  if(!token||!owner||!repo){
-    S("GitHub 정보를 입력해주세요.",true);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (m) => ({
+  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+}[m]));
+
+const boolVal = (v) => {
+  if (typeof v === "boolean") return v;
+  return !["false","0","off","no",""].includes(String(v ?? "").trim().toLowerCase());
+};
+
+const clone = (x) => JSON.parse(JSON.stringify(x));
+
+function setDirty(v = true) {
+  dirty = v;
+  document.querySelector("#dirty")?.classList.toggle("show", v);
+}
+
+function status(message, isError = false) {
+  const box = $("#status");
+  if (!box) return;
+  box.textContent = message;
+  box.className = "status show" + (isError ? " err" : "");
+  clearTimeout(window.__statusTimer);
+  window.__statusTimer = setTimeout(() => box.className = "status", 5000);
+}
+
+function makeField(key, label, type) {
+  const wrap = document.createElement("div");
+  wrap.className = "field " + (["textarea","html","image"].includes(type) ? "full" : "");
+
+  const lab = document.createElement("label");
+  lab.textContent = label;
+  const small = document.createElement("small");
+  small.textContent = key;
+  wrap.append(lab, small);
+
+  if (type === "toggle") {
+    const row = document.createElement("div");
+    row.className = "toggle-row";
+    const txt = document.createElement("span");
+    txt.textContent = boolVal(current[key]) ? "표시" : "숨김";
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "switch " + (boolVal(current[key]) ? "on" : "");
+    btn.dataset.toggleKey = key;
+    btn.onclick = () => {
+      const on = !btn.classList.contains("on");
+      btn.classList.toggle("on", on);
+      txt.textContent = on ? "표시" : "숨김";
+      current[key] = on;
+      setDirty();
+    };
+    row.append(txt, btn);
+    wrap.append(row);
+    return wrap;
+  }
+
+  if (type === "color") {
+    const row = document.createElement("div");
+    row.className = "color-wrap";
+    const picker = document.createElement("input");
+    picker.type = "color";
+    picker.value = current[key] || "#17372f";
+    const input = document.createElement("input");
+    input.type = "text";
+    input.dataset.key = key;
+    input.value = current[key] || "#17372f";
+
+    picker.oninput = () => {
+      input.value = picker.value;
+      current[key] = picker.value;
+      setDirty();
+    };
+    input.oninput = () => {
+      current[key] = input.value;
+      if (/^#[0-9a-fA-F]{6}$/.test(input.value)) picker.value = input.value;
+      setDirty();
+    };
+    row.append(picker, input);
+    wrap.append(row);
+    return wrap;
+  }
+
+  if (type === "number") {
+    const input = document.createElement("input");
+    input.type = "number";
+    input.min = "10";
+    input.max = "140";
+    input.step = "1";
+    input.dataset.key = key;
+    input.value = current[key] ?? "";
+    input.oninput = () => {
+      current[key] = Number(input.value);
+      setDirty();
+    };
+    wrap.append(input);
+    return wrap;
+  }
+
+  if (type === "image") {
+    const box = document.createElement("div");
+    box.className = "image-field";
+
+    const preview = document.createElement("div");
+    preview.className = "image-preview";
+    const img = document.createElement("img");
+    img.src = current[key] || "";
+    img.alt = "";
+    preview.append(img);
+
+    const controls = document.createElement("div");
+    controls.className = "image-controls";
+
+    const pathInput = document.createElement("input");
+    pathInput.type = "text";
+    pathInput.dataset.key = key;
+    pathInput.value = current[key] || "";
+    pathInput.placeholder = "이미지 URL 또는 assets/images/... 경로";
+    pathInput.oninput = () => {
+      current[key] = pathInput.value;
+      img.src = pathInput.value;
+      setDirty();
+    };
+
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = "image/*";
+    fileInput.onchange = () => {
+      const file = fileInput.files?.[0];
+      if (!file) return;
+      pendingFiles.set(key, file);
+      img.src = URL.createObjectURL(file);
+      help.textContent = "새 이미지 선택됨 · GitHub 저장 시 이미지와 경로가 함께 반영됩니다.";
+      setDirty();
+    };
+
+    const help = document.createElement("div");
+    help.className = "image-help";
+    help.textContent = "경로를 직접 바꾸거나 새 이미지를 선택할 수 있습니다.";
+
+    controls.append(pathInput, fileInput, help);
+    box.append(preview, controls);
+    wrap.append(box);
+    return wrap;
+  }
+
+  const input = (type === "textarea" || type === "html")
+    ? document.createElement("textarea")
+    : document.createElement("input");
+
+  input.dataset.key = key;
+  input.value = current[key] ?? "";
+  if (type === "html") input.placeholder = "<br>로 줄바꿈 가능";
+  if (type === "url") input.placeholder = "https://...";
+
+  input.oninput = () => {
+    current[key] = input.value;
+    setDirty();
+  };
+  wrap.append(input);
+  return wrap;
+}
+
+function newStore() {
+  return {
+    id: "store-" + Date.now(),
+    visible: true,
+    region: "REGION",
+    name: "신규 매장",
+    desc: "매장 설명을 입력해주세요.",
+    image: "assets/images/brand-shelf.webp",
+    address: "주소 입력",
+    hours: "영업시간 입력",
+    phone: "",
+    map_url: "",
+    tags: ["만화","OTT"]
+  };
+}
+
+function renderStoresManager() {
+  const holder = $("#storeManager");
+  if (!holder) return;
+  holder.innerHTML = "";
+
+  const items = Array.isArray(current["stores.items"]) ? current["stores.items"] : [];
+  items.forEach((store, index) => {
+    const card = document.createElement("div");
+    card.className = "store-edit-card";
+    card.innerHTML = `
+      <div class="store-edit-top">
+        <div class="store-edit-title"><span class="store-index">${index + 1}</span><span>${esc(store.name)}</span></div>
+        <div class="store-actions">
+          <button type="button" data-up>↑ 위로</button>
+          <button type="button" data-down>↓ 아래로</button>
+          <button type="button" class="danger" data-del>삭제</button>
+        </div>
+      </div>
+      <div class="store-fields">
+        <div><label>노출 여부</label><div class="store-visible-row"><input type="checkbox" data-f="visible" ${boolVal(store.visible) ? "checked" : ""}> 홈페이지에 표시</div></div>
+        <div><label>지역 표기</label><input data-f="region" value="${esc(store.region)}"></div>
+        <div><label>매장명</label><input data-f="name" value="${esc(store.name)}"></div>
+        <div><label>전화번호</label><input data-f="phone" value="${esc(store.phone)}"></div>
+        <div class="wide"><label>매장 설명</label><textarea data-f="desc">${esc(store.desc)}</textarea></div>
+        <div><label>주소</label><input data-f="address" value="${esc(store.address)}"></div>
+        <div><label>영업시간</label><input data-f="hours" value="${esc(store.hours)}"></div>
+        <div><label>지도 링크</label><input data-f="map_url" value="${esc(store.map_url)}"></div>
+        <div><label>태그</label><input data-f="tags" value="${esc((store.tags || []).join(", "))}"></div>
+        <div class="wide"><label>매장 이미지</label>
+          <div class="store-image-row">
+            <div class="store-image-preview"><img data-img src="${esc(store.image)}"></div>
+            <div class="store-image-controls">
+              <input data-f="image" value="${esc(store.image)}">
+              <input type="file" accept="image/*" data-file>
+              <div class="image-help" data-store-help>기존 경로를 직접 바꾸거나 새 이미지를 선택할 수 있습니다.</div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+    card.querySelectorAll("[data-f]").forEach((input) => {
+      const field = input.dataset.f;
+      input.addEventListener(field === "visible" ? "change" : "input", () => {
+        if (field === "visible") store[field] = input.checked;
+        else if (field === "tags") store[field] = input.value.split(",").map(v => v.trim()).filter(Boolean);
+        else store[field] = input.value;
+
+        if (field === "name") card.querySelector(".store-edit-title span:last-child").textContent = store.name;
+        if (field === "image") card.querySelector("[data-img]").src = store.image;
+        setDirty();
+      });
+    });
+
+    card.querySelector("[data-file]").onchange = (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      pendingFiles.set(`stores.items.${store.id}.image`, file);
+      card.querySelector("[data-img]").src = URL.createObjectURL(file);
+      card.querySelector("[data-store-help]").textContent = "새 이미지 선택됨 · 저장 시 이미지와 경로가 함께 반영됩니다.";
+      setDirty();
+    };
+
+    card.querySelector("[data-del]").onclick = () => {
+      if (!confirm(`'${store.name}'을 삭제할까요?`)) return;
+      current["stores.items"].splice(index, 1);
+      renderStoresManager();
+      setDirty();
+    };
+
+    card.querySelector("[data-up]").onclick = () => {
+      if (index <= 0) return;
+      const arr = current["stores.items"];
+      [arr[index - 1], arr[index]] = [arr[index], arr[index - 1]];
+      renderStoresManager();
+      setDirty();
+    };
+
+    card.querySelector("[data-down]").onclick = () => {
+      const arr = current["stores.items"];
+      if (index >= arr.length - 1) return;
+      [arr[index + 1], arr[index]] = [arr[index], arr[index + 1]];
+      renderStoresManager();
+      setDirty();
+    };
+
+    holder.append(card);
+  });
+}
+
+function render(data) {
+  current = Object.assign({}, window.DODO_DEFAULT_CONTENT || {}, clone(data || {}));
+  if (!Array.isArray(current["stores.items"])) current["stores.items"] = [];
+  pendingFiles.clear();
+  setDirty(false);
+
+  const root = $("#groups");
+  const side = $("#sideLinks");
+  root.innerHTML = "";
+  side.innerHTML = "";
+
+  if (!window.DODO_SCHEMA) {
+    status("관리 항목 파일(admin-schema.js)을 불러오지 못했습니다.", true);
     return;
   }
 
-  const h={
+  let index = 0;
+  Object.entries(window.DODO_SCHEMA).forEach(([name, fields]) => {
+    const id = "group-" + index++;
+    const link = document.createElement("button");
+    link.className = "side-link";
+    link.textContent = name;
+    link.onclick = () => document.getElementById(id)?.scrollIntoView({behavior:"smooth"});
+    side.append(link);
+
+    const section = document.createElement("section");
+    section.className = "group";
+    section.id = id;
+    section.innerHTML = `<div class="gh"><h2>${esc(name)}</h2><span>${fields.length}개 항목</span></div><div class="fields"></div>`;
+    fields.forEach(args => section.querySelector(".fields").append(makeField(...args)));
+    root.append(section);
+  });
+
+  const storeLink = document.createElement("button");
+  storeLink.className = "side-link";
+  storeLink.textContent = "매장 추가 / 관리";
+  storeLink.onclick = () => $("#storeGroup")?.scrollIntoView({behavior:"smooth"});
+  side.append(storeLink);
+
+  const storeSection = document.createElement("section");
+  storeSection.className = "store-manager";
+  storeSection.id = "storeGroup";
+  storeSection.innerHTML = `
+    <div class="store-manager-head">
+      <div><h2>매장 추가 / 관리</h2><div style="font-size:10px;color:#7d8580;margin-top:3px">신규 매장은 원하는 만큼 계속 추가할 수 있습니다.</div></div>
+      <button id="addStore" class="add-store-btn" type="button">+ 신규 매장 추가</button>
+    </div>
+    <div id="storeManager" class="store-list"></div>`;
+  root.append(storeSection);
+
+  $("#addStore").onclick = () => {
+    current["stores.items"].push(newStore());
+    renderStoresManager();
+    setDirty();
+  };
+  renderStoresManager();
+}
+
+async function load() {
+  let data = window.DODO_DEFAULT_CONTENT || {};
+  if (location.protocol !== "file:") {
+    try {
+      const r = await fetch("content.json?_=" + Date.now(), {cache:"no-store"});
+      if (r.ok) data = await r.json();
+    } catch (_) {}
+  }
+  render(data);
+}
+
+function collect() {
+  const data = clone(current);
+  document.querySelectorAll("[data-key]").forEach((input) => {
+    data[input.dataset.key] = input.type === "number" ? Number(input.value) : input.value;
+  });
+  document.querySelectorAll("[data-toggle-key]").forEach((btn) => {
+    data[btn.dataset.toggleKey] = btn.classList.contains("on");
+  });
+  return data;
+}
+
+function arrayBufferToBase64(ab) {
+  const bytes = new Uint8Array(ab);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 32768) {
+    binary += String.fromCharCode(...bytes.subarray(i, Math.min(i + 32768, bytes.length)));
+  }
+  return btoa(binary);
+}
+
+function textToBase64(text) {
+  return btoa(unescape(encodeURIComponent(text)));
+}
+
+function base64ToText(base64) {
+  const clean = String(base64 || "").replace(/\n/g, "");
+  return decodeURIComponent(escape(atob(clean)));
+}
+
+function safeImageName(name) {
+  const ext = (name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+  return `cms-${Date.now()}-${Math.random().toString(36).slice(2,7)}.${ext}`;
+}
+
+async function getGithubMeta(api, branch, headers) {
+  const r = await fetch(api + "?ref=" + encodeURIComponent(branch) + "&_=" + Date.now(), {
+    headers,
+    cache:"no-store"
+  });
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error("GitHub 파일 정보를 확인하지 못했습니다.");
+  return r.json();
+}
+
+async function putGithub(api, branch, headers, content, message, sha) {
+  const body = {message, content, branch};
+  if (sha) body.sha = sha;
+  const r = await fetch(api, {
+    method:"PUT",
+    headers:{...headers, "Content-Type":"application/json"},
+    body:JSON.stringify(body)
+  });
+  if (!r.ok) {
+    const t = await r.text();
+    throw new Error("GitHub 저장 실패: " + t.slice(0,180));
+  }
+  return r.json();
+}
+
+async function save() {
+  const token = $("#token").value.trim();
+  const owner = $("#owner").value.trim();
+  const repo = $("#repo").value.trim();
+  const branch = $("#branch").value.trim() || "main";
+
+  if (!token || !owner || !repo) {
+    status("GitHub 토큰·계정명·저장소명을 입력해주세요.", true);
+    return;
+  }
+
+  const headers = {
     "Accept":"application/vnd.github+json",
-    "Authorization":"Bearer "+token,
+    "Authorization":"Bearer " + token,
     "X-GitHub-Api-Version":"2022-11-28"
   };
 
-  let d=collect();
+  const data = collect();
 
-  try{
-    // 1. 선택한 새 이미지를 먼저 업로드하고 새 경로를 데이터에 즉시 반영
-    let uploadedCount=0;
-    for(const [k,f] of pendingFiles){
-      uploadedCount++;
-      const path="assets/images/cms/"+nm(f.name);
-      const api=`https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${path}`;
+  try {
+    let uploaded = 0;
 
-      S(`이미지 업로드 중... (${uploadedCount}/${pendingFiles.size})`);
-      await put(api,br,h,b64(await f.arrayBuffer()),"Upload CMS image");
+    // 1) 이미지 먼저 업로드 + content 데이터의 이미지 경로를 즉시 변경
+    for (const [key, file] of pendingFiles.entries()) {
+      uploaded++;
+      status(`이미지 업로드 중... (${uploaded}/${pendingFiles.size})`);
 
-      if(k.startsWith("stores.items.")){
-        const id=k.split(".")[2];
-        const st=d["stores.items"]?.find(x=>x.id===id);
-        if(st) st.image=path;
+      const path = "assets/images/cms/" + safeImageName(file.name);
+      const imageApi = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${path}`;
 
-        const currentStore=current["stores.items"]?.find(x=>x.id===id);
-        if(currentStore) currentStore.image=path;
-      }else{
-        d[k]=path;
-        current[k]=path;
+      await putGithub(
+        imageApi,
+        branch,
+        headers,
+        arrayBufferToBase64(await file.arrayBuffer()),
+        "Upload CMS image"
+      );
 
-        // 관리자 화면의 이미지 경로 입력칸도 즉시 새 경로로 갱신
-        const input=document.querySelector(`[data-key="${CSS.escape(k)}"]`);
-        if(input) input.value=path;
+      if (key.startsWith("stores.items.")) {
+        const id = key.split(".")[2];
+        const store = data["stores.items"]?.find(x => x.id === id);
+        if (store) store.image = path;
+      } else {
+        data[key] = path;
       }
     }
 
-    // 2. content.json 저장
-    const contentApi=`https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/content.json`;
+    // 2) content.json 저장
+    const contentApi = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/content.json`;
 
-    async function writeContent(){
-      const m=await meta(contentApi,br,h);
-      await put(
+    const writeContent = async () => {
+      const meta = await getGithubMeta(contentApi, branch, headers);
+      await putGithub(
         contentApi,
-        br,
-        h,
-        tb(JSON.stringify(d,null,2)),
+        branch,
+        headers,
+        textToBase64(JSON.stringify(data, null, 2)),
         "Update DODO CMS content",
-        m?.sha
+        meta?.sha
       );
-    }
+    };
 
-    S("홈페이지 설정값 저장 중...");
+    status("홈페이지 설정값 저장 중...");
     await writeContent();
 
-    // 3. 저장 검증 - 실제 GitHub의 content.json을 다시 읽어서 이미지 경로까지 확인
-    async function verify(){
-      const r=await fetch(contentApi+"?ref="+encodeURIComponent(br)+"&_="+Date.now(),{
-        headers:h,
-        cache:"no-store"
-      });
-      if(!r.ok) return false;
+    // 3) GitHub의 content.json을 다시 읽어서 이미지 경로까지 검증
+    const verify = async () => {
+      const file = await getGithubMeta(contentApi, branch, headers);
+      if (!file?.content) return false;
 
-      const file=await r.json();
-      const decoded=decodeURIComponent(escape(atob(String(file.content||"").replace(/
-/g,""))));
-      const saved=JSON.parse(decoded);
+      const saved = JSON.parse(base64ToText(file.content));
 
-      for(const [k] of pendingFiles){
-        if(k.startsWith("stores.items.")){
-          const id=k.split(".")[2];
-          const expected=d["stores.items"]?.find(x=>x.id===id)?.image;
-          const actual=saved["stores.items"]?.find(x=>x.id===id)?.image;
-          if(expected!==actual) return false;
-        }else{
-          if(saved[k]!==d[k]) return false;
+      for (const [key] of pendingFiles.entries()) {
+        if (key.startsWith("stores.items.")) {
+          const id = key.split(".")[2];
+          const expected = data["stores.items"]?.find(x => x.id === id)?.image;
+          const actual = saved["stores.items"]?.find(x => x.id === id)?.image;
+          if (expected !== actual) return false;
+        } else {
+          if (saved[key] !== data[key]) return false;
         }
       }
       return true;
-    }
+    };
 
-    let ok=await verify();
+    let verified = await verify();
 
-    // 드물게 GitHub 커밋 반영 타이밍이 엇갈리면 한 번 더 저장/검증
-    if(!ok){
-      S("이미지 경로 동기화 확인 중...");
-      await new Promise(r=>setTimeout(r,900));
+    if (!verified) {
+      status("이미지 경로 동기화 확인 중...");
+      await new Promise(r => setTimeout(r, 1000));
       await writeContent();
-      await new Promise(r=>setTimeout(r,500));
-      ok=await verify();
+      await new Promise(r => setTimeout(r, 700));
+      verified = await verify();
     }
 
-    if(!ok){
-      throw new Error("이미지는 업로드됐지만 content.json 경로 동기화에 실패했습니다. 다시 저장해주세요.");
+    if (!verified) {
+      throw new Error("이미지는 올라갔지만 content.json 경로 확인에 실패했습니다. 다시 저장해주세요.");
     }
 
+    current = clone(data);
     pendingFiles.clear();
-    current=d;
-    D(false);
-    S("저장 완료! 이미지 경로까지 자동 반영됐습니다. 1~3분 후 홈페이지에서 확인하세요.");
+    setDirty(false);
 
-  }catch(e){
-    S(e.message||"저장 중 오류가 발생했습니다.",true);
+    // 화면상의 이미지 경로 입력값도 최신값으로 재표시
+    render(current);
+    status("저장 완료! 이미지 경로까지 자동 반영됐습니다. 1~3분 후 홈페이지에서 확인하세요.");
+
+  } catch (e) {
+    status(e.message || "저장 중 오류가 발생했습니다.", true);
   }
 }
-function backup(){let a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(collect(),null,2)],{type:"application/json"}));a.download="content-backup.json";a.click()}
-document.addEventListener("DOMContentLoaded",()=>{load();$("#save").onclick=save;$("#reload").onclick=load;$("#preview").onclick=()=>open("index.html","_blank");$("#backup").onclick=backup});
+
+function backup() {
+  const blob = new Blob([JSON.stringify(collect(), null, 2)], {type:"application/json;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "content-backup.json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function restore(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      render(JSON.parse(reader.result));
+      setDirty(true);
+      status("백업을 불러왔습니다. GitHub에 저장을 눌러 실제 적용하세요.");
+    } catch (_) {
+      status("올바른 JSON 백업 파일이 아닙니다.", true);
+    }
+  };
+  reader.readAsText(file, "utf-8");
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  load();
+
+  $("#save").onclick = save;
+  $("#reload").onclick = () => {
+    if (dirty && !confirm("저장하지 않은 변경사항이 있습니다. 현재값을 다시 불러올까요?")) return;
+    load();
+  };
+  $("#preview").onclick = () => window.open("index.html", "_blank");
+  $("#backup").onclick = backup;
+
+  if ($("#restoreBtn")) {
+    $("#restoreBtn").onclick = () => $("#restoreFile")?.click();
+  }
+  if ($("#restoreFile")) {
+    $("#restoreFile").onchange = (e) => {
+      const file = e.target.files?.[0];
+      if (file) restore(file);
+    };
+  }
+
+  window.addEventListener("beforeunload", (e) => {
+    if (!dirty) return;
+    e.preventDefault();
+    e.returnValue = "";
+  });
+});
