@@ -18,6 +18,120 @@ async function load(){let d=window.DODO_DEFAULT_CONTENT||{};if(location.protocol
 function collect(){let d=C(current);document.querySelectorAll("[data-key]").forEach(x=>d[x.dataset.key]=x.type==="number"?Number(x.value):x.value);return d}
 function b64(ab){let a=new Uint8Array(ab),s="";for(let i=0;i<a.length;i+=32768)s+=String.fromCharCode(...a.subarray(i,Math.min(i+32768,a.length)));return btoa(s)}function tb(s){return btoa(unescape(encodeURIComponent(s)))}function nm(n){let e=(n.split(".").pop()||"jpg").replace(/[^a-zA-Z0-9]/g,"")||"jpg";return"cms-"+Date.now()+"-"+Math.random().toString(36).slice(2,7)+"."+e}
 async function meta(api,br,h){let r=await fetch(api+"?ref="+encodeURIComponent(br),{headers:h});if(r.status===404)return null;if(!r.ok)throw Error("GitHub 파일 확인 실패");return r.json()}async function put(api,br,h,c,msg,sha){let o={message:msg,content:c,branch:br};if(sha)o.sha=sha;let r=await fetch(api,{method:"PUT",headers:{...h,"Content-Type":"application/json"},body:JSON.stringify(o)});if(!r.ok)throw Error("GitHub 저장 실패");return r.json()}
-async function save(){let token=$("#token").value.trim(),owner=$("#owner").value.trim(),repo=$("#repo").value.trim(),br=$("#branch").value.trim()||"main";if(!token||!owner||!repo){S("GitHub 정보를 입력해주세요.",true);return}let h={"Accept":"application/vnd.github+json","Authorization":"Bearer "+token,"X-GitHub-Api-Version":"2022-11-28"},d=collect();try{for(const[k,f]of pendingFiles){let path="assets/images/cms/"+nm(f.name),api=`https://api.github.com/repos/${owner}/${repo}/contents/${path}`;S("이미지 업로드 중...");await put(api,br,h,b64(await f.arrayBuffer()),"Upload CMS image");if(k.startsWith("stores.items.")){let id=k.split(".")[2],st=d["stores.items"].find(x=>x.id===id);if(st)st.image=path}else d[k]=path}let api=`https://api.github.com/repos/${owner}/${repo}/contents/content.json`,m=await meta(api,br,h);await put(api,br,h,tb(JSON.stringify(d,null,2)),"Update DODO CMS",m?.sha);current=d;pendingFiles.clear();D(false);S("저장 완료! 1~3분 후 홈페이지에 반영됩니다.")}catch(e){S(e.message,true)}}
+async function save(){
+  let token=$("#token").value.trim(),
+      owner=$("#owner").value.trim(),
+      repo=$("#repo").value.trim(),
+      br=$("#branch").value.trim()||"main";
+
+  if(!token||!owner||!repo){
+    S("GitHub 정보를 입력해주세요.",true);
+    return;
+  }
+
+  const h={
+    "Accept":"application/vnd.github+json",
+    "Authorization":"Bearer "+token,
+    "X-GitHub-Api-Version":"2022-11-28"
+  };
+
+  let d=collect();
+
+  try{
+    // 1. 선택한 새 이미지를 먼저 업로드하고 새 경로를 데이터에 즉시 반영
+    let uploadedCount=0;
+    for(const [k,f] of pendingFiles){
+      uploadedCount++;
+      const path="assets/images/cms/"+nm(f.name);
+      const api=`https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${path}`;
+
+      S(`이미지 업로드 중... (${uploadedCount}/${pendingFiles.size})`);
+      await put(api,br,h,b64(await f.arrayBuffer()),"Upload CMS image");
+
+      if(k.startsWith("stores.items.")){
+        const id=k.split(".")[2];
+        const st=d["stores.items"]?.find(x=>x.id===id);
+        if(st) st.image=path;
+
+        const currentStore=current["stores.items"]?.find(x=>x.id===id);
+        if(currentStore) currentStore.image=path;
+      }else{
+        d[k]=path;
+        current[k]=path;
+
+        // 관리자 화면의 이미지 경로 입력칸도 즉시 새 경로로 갱신
+        const input=document.querySelector(`[data-key="${CSS.escape(k)}"]`);
+        if(input) input.value=path;
+      }
+    }
+
+    // 2. content.json 저장
+    const contentApi=`https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/content.json`;
+
+    async function writeContent(){
+      const m=await meta(contentApi,br,h);
+      await put(
+        contentApi,
+        br,
+        h,
+        tb(JSON.stringify(d,null,2)),
+        "Update DODO CMS content",
+        m?.sha
+      );
+    }
+
+    S("홈페이지 설정값 저장 중...");
+    await writeContent();
+
+    // 3. 저장 검증 - 실제 GitHub의 content.json을 다시 읽어서 이미지 경로까지 확인
+    async function verify(){
+      const r=await fetch(contentApi+"?ref="+encodeURIComponent(br)+"&_="+Date.now(),{
+        headers:h,
+        cache:"no-store"
+      });
+      if(!r.ok) return false;
+
+      const file=await r.json();
+      const decoded=decodeURIComponent(escape(atob(String(file.content||"").replace(/
+/g,""))));
+      const saved=JSON.parse(decoded);
+
+      for(const [k] of pendingFiles){
+        if(k.startsWith("stores.items.")){
+          const id=k.split(".")[2];
+          const expected=d["stores.items"]?.find(x=>x.id===id)?.image;
+          const actual=saved["stores.items"]?.find(x=>x.id===id)?.image;
+          if(expected!==actual) return false;
+        }else{
+          if(saved[k]!==d[k]) return false;
+        }
+      }
+      return true;
+    }
+
+    let ok=await verify();
+
+    // 드물게 GitHub 커밋 반영 타이밍이 엇갈리면 한 번 더 저장/검증
+    if(!ok){
+      S("이미지 경로 동기화 확인 중...");
+      await new Promise(r=>setTimeout(r,900));
+      await writeContent();
+      await new Promise(r=>setTimeout(r,500));
+      ok=await verify();
+    }
+
+    if(!ok){
+      throw new Error("이미지는 업로드됐지만 content.json 경로 동기화에 실패했습니다. 다시 저장해주세요.");
+    }
+
+    pendingFiles.clear();
+    current=d;
+    D(false);
+    S("저장 완료! 이미지 경로까지 자동 반영됐습니다. 1~3분 후 홈페이지에서 확인하세요.");
+
+  }catch(e){
+    S(e.message||"저장 중 오류가 발생했습니다.",true);
+  }
+}
 function backup(){let a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(collect(),null,2)],{type:"application/json"}));a.download="content-backup.json";a.click()}
 document.addEventListener("DOMContentLoaded",()=>{load();$("#save").onclick=save;$("#reload").onclick=load;$("#preview").onclick=()=>open("index.html","_blank");$("#backup").onclick=backup});
