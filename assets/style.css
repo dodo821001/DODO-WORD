@@ -268,3 +268,6 @@ button,input,textarea,select{font:inherit}
 #inquirySubmit[disabled]{opacity:.58;cursor:not-allowed!important}
 #inquirySubmit.is-loading:after{content:"";width:14px;height:14px;border:2px solid rgba(255,255,255,.38);border-top-color:#fff;border-radius:50%;animation:dodoSpin .7s linear infinite;margin-left:4px}
 @keyframes dodoSpin{to{transform:rotate(360deg)}}
+.hero-ticket{
+  display:none !important;
+}
