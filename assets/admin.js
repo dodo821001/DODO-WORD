@@ -19,11 +19,23 @@ function collect(){let d=C(current);document.querySelectorAll("[data-key]").forE
 function b64(ab){let a=new Uint8Array(ab),s="";for(let i=0;i<a.length;i+=32768)s+=String.fromCharCode(...a.subarray(i,Math.min(i+32768,a.length)));return btoa(s)}
 function nm(n){let e=(n.split(".").pop()||"jpg").replace(/[^a-zA-Z0-9]/g,"")||"jpg";return"cms-"+Date.now()+"-"+Math.random().toString(36).slice(2,7)+"."+e}
 
-async function save(){
-  let d=collect();
-  const images=[];
+async function saveHomepage(){
+  const btn=$("#save");
+  const originalText=btn?.textContent||"홈페이지에 저장";
 
   try{
+    if(btn){
+      btn.disabled=true;
+      btn.textContent="저장 중...";
+      btn.style.opacity=".72";
+      btn.style.cursor="wait";
+    }
+
+    S("저장 요청을 준비하고 있습니다...");
+
+    const d=collect();
+    const images=[];
+
     // 선택한 이미지를 Worker로 보내기 전에 content.json에 들어갈 경로를 먼저 확정
     for(const [k,f] of pendingFiles){
       const path="assets/images/cms/"+nm(f.name);
@@ -33,36 +45,165 @@ async function save(){
       if(k.startsWith("stores.items.")){
         const id=k.split(".")[2];
         const st=d["stores.items"]?.find(x=>x.id===id);
-        if(st)st.image=path;
+        if(st) st.image=path;
       }else{
         d[k]=path;
       }
     }
 
-    S(images.length?`이미지 ${images.length}개와 홈페이지 설정을 서버에 저장 중...`:"홈페이지 설정을 서버에 저장 중...");
+    // Worker 라우팅/Access 세션이 정상인지 먼저 확인
+    S("Cloudflare 저장 서버 연결을 확인하고 있습니다...");
+    const health=await fetch("/admin-api/health?_="+Date.now(),{
+      method:"GET",
+      credentials:"same-origin",
+      cache:"no-store",
+      redirect:"follow"
+    });
+
+    let healthData=null;
+    try{ healthData=await health.json(); }catch(e){}
+
+    if(!health.ok || !healthData?.ok){
+      throw new Error("Cloudflare 저장 서버 연결을 확인하지 못했습니다. 관리자 페이지를 새로고침한 뒤 다시 시도해주세요.");
+    }
+
+    S(images.length
+      ? `이미지 ${images.length}개와 홈페이지 설정을 저장 중입니다...`
+      : "홈페이지 설정을 저장 중입니다..."
+    );
 
     const r=await fetch("/admin-api/save",{
       method:"POST",
       credentials:"same-origin",
-      headers:{"Content-Type":"application/json"},
+      cache:"no-store",
+      redirect:"follow",
+      headers:{
+        "Content-Type":"application/json",
+        "Accept":"application/json"
+      },
       body:JSON.stringify({content:d,images})
     });
 
-    let result={};
-    try{result=await r.json()}catch(e){}
+    const contentType=r.headers.get("content-type")||"";
+    let result=null;
 
-    if(!r.ok||!result.ok){
-      throw new Error(result.error||`서버 저장 실패 (${r.status})`);
+    if(contentType.includes("application/json")){
+      try{ result=await r.json(); }catch(e){}
+    }else{
+      const text=await r.text();
+      if(r.redirected || /cloudflareaccess\.com|Log in to/i.test(text)){
+        throw new Error("Cloudflare Access 인증이 만료되었습니다. 페이지를 새로고침해 다시 로그인한 뒤 저장해주세요.");
+      }
+      throw new Error(`저장 서버가 예상하지 못한 응답을 보냈습니다. (${r.status})`);
+    }
+
+    if(!r.ok || !result?.ok){
+      throw new Error(result?.error || `서버 저장 실패 (${r.status})`);
     }
 
     current=d;
     pendingFiles.clear();
     D(false);
     render(d);
-    S("저장 완료! GitHub Token 없이 서버에서 안전하게 반영됐습니다. 1~3분 후 홈페이지에서 확인하세요.");
+
+    if(btn) btn.textContent="✓ 저장 완료";
+    S("저장 완료! GitHub에 안전하게 반영됐습니다. 1~3분 후 홈페이지에서 확인하세요.");
+
+    setTimeout(()=>{
+      if(btn) btn.textContent=originalText;
+    },1800);
+
   }catch(e){
-    S(e.message||"저장 중 오류가 발생했습니다.",true);
+    console.error("DODO CMS save error:",e);
+    S(e?.message||"저장 중 오류가 발생했습니다.",true);
+    if(btn) btn.textContent="저장 실패";
+    setTimeout(()=>{
+      if(btn) btn.textContent=originalText;
+    },2200);
+  }finally{
+    if(btn){
+      btn.disabled=false;
+      btn.style.opacity="";
+      btn.style.cursor="";
+    }
   }
 }
+
 function backup(){let a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(collect(),null,2)],{type:"application/json"}));a.download="content-backup.json";a.click()}
-document.addEventListener("DOMContentLoaded",()=>{load();$("#save").onclick=save;$("#reload").onclick=load;$("#preview").onclick=()=>open("index.html","_blank");$("#backup").onclick=backup});
+function restoreBackup(file){
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const data=JSON.parse(reader.result);
+      render(data);
+      D(true);
+      S("백업을 불러왔습니다. 실제 반영하려면 '홈페이지에 저장'을 눌러주세요.");
+    }catch(e){
+      S("올바른 JSON 백업 파일이 아닙니다.",true);
+    }
+  };
+  reader.readAsText(file,"utf-8");
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+  load();
+
+  const saveBtn=$("#save");
+  if(saveBtn){
+    saveBtn.type="button";
+    saveBtn.addEventListener("click",(e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+      saveHomepage();
+    });
+  }
+
+  const reloadBtn=$("#reload");
+  if(reloadBtn){
+    reloadBtn.type="button";
+    reloadBtn.addEventListener("click",(e)=>{
+      e.preventDefault();
+      if(dirty && !confirm("저장하지 않은 변경사항이 있습니다. 현재값을 다시 불러올까요?")) return;
+      load();
+    });
+  }
+
+  const previewBtn=$("#preview");
+  if(previewBtn){
+    previewBtn.type="button";
+    previewBtn.addEventListener("click",(e)=>{
+      e.preventDefault();
+      open("index.html","_blank");
+    });
+  }
+
+  const backupBtn=$("#backup");
+  if(backupBtn){
+    backupBtn.type="button";
+    backupBtn.addEventListener("click",(e)=>{
+      e.preventDefault();
+      backup();
+    });
+  }
+
+  const restoreBtn=$("#restoreBtn");
+  const restoreFile=$("#restoreFile");
+  if(restoreBtn && restoreFile){
+    restoreBtn.type="button";
+    restoreBtn.addEventListener("click",(e)=>{
+      e.preventDefault();
+      restoreFile.click();
+    });
+    restoreFile.addEventListener("change",(e)=>{
+      const file=e.target.files?.[0];
+      if(file) restoreBackup(file);
+      e.target.value="";
+    });
+  }
+
+  window.addEventListener("beforeunload",(e)=>{
+    if(!dirty) return;
+    e.preventDefault();
+    e.returnValue="";
+  });
+});
