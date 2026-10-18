@@ -14,7 +14,48 @@ function fresh(){return{id:"store-"+Date.now(),visible:true,region:"REGION",name
 function stores(){let h=$("#storeManager");if(!h)return;h.innerHTML="";(current["stores.items"]||[]).forEach((s,i)=>{let c=document.createElement("div");c.className="store-edit-card";c.innerHTML=`<div class="store-edit-top"><div class="store-edit-title"><span class="store-index">${i+1}</span><span>${E(s.name)}</span></div><div class="store-actions"><button data-up>↑ 위로</button><button data-down>↓ 아래로</button><button class="danger" data-del>삭제</button></div></div><div class="store-fields"><div><label>노출 여부</label><div class="store-visible-row"><input type="checkbox" data-f="visible" ${B(s.visible)?"checked":""}> 홈페이지에 표시</div></div><div><label>지역 표기</label><input data-f="region" value="${E(s.region)}"></div><div><label>매장명</label><input data-f="name" value="${E(s.name)}"></div><div><label>전화번호</label><input data-f="phone" value="${E(s.phone)}"></div><div class="wide"><label>매장 설명</label><textarea data-f="desc">${E(s.desc)}</textarea></div><div><label>주소</label><input data-f="address" value="${E(s.address)}"></div><div><label>영업시간</label><input data-f="hours" value="${E(s.hours)}"></div><div><label>지도 링크</label><input data-f="map_url" value="${E(s.map_url)}"></div><div><label>태그</label><input data-f="tags" value="${E((s.tags||[]).join(", "))}"></div><div class="wide"><label>매장 이미지</label><div class="store-image-row"><div class="store-image-preview"><img data-img src="${E(s.image)}"></div><div class="store-image-controls"><input data-f="image" value="${E(s.image)}"><input type="file" accept="image/*" data-file></div></div></div></div>`;
  c.querySelectorAll("[data-f]").forEach(x=>{let k=x.dataset.f,ev=k==="visible"?"change":"input";x.addEventListener(ev,()=>{s[k]=k==="visible"?x.checked:k==="tags"?x.value.split(",").map(v=>v.trim()).filter(Boolean):x.value;if(k==="name")c.querySelector(".store-edit-title span:last-child").textContent=s.name;if(k==="image")c.querySelector("[data-img]").src=s.image;D()})});c.querySelector("[data-file]").onchange=e=>{let q=e.target.files?.[0];if(!q)return;pendingFiles.set("stores.items."+s.id+".image",q);c.querySelector("[data-img]").src=URL.createObjectURL(q);D()};c.querySelector("[data-del]").onclick=()=>{if(confirm(`'${s.name}'을 삭제할까요?`)){current["stores.items"].splice(i,1);stores();D()}};c.querySelector("[data-up]").onclick=()=>{if(i>0){let a=current["stores.items"];[a[i-1],a[i]]=[a[i],a[i-1]];stores();D()}};c.querySelector("[data-down]").onclick=()=>{let a=current["stores.items"];if(i<a.length-1){[a[i+1],a[i]]=[a[i],a[i+1]];stores();D()}};h.append(c)})}
 function render(d){current=Object.assign({},window.DODO_DEFAULT_CONTENT||{},C(d||{}));if(!Array.isArray(current["stores.items"]))current["stores.items"]=[];pendingFiles.clear();D(false);let r=$("#groups"),side=$("#sideLinks");r.innerHTML="";side.innerHTML="";let i=0;Object.entries(window.DODO_SCHEMA).forEach(([n,fs])=>{let id="g"+i++,b=document.createElement("button");b.className="side-link";b.textContent=n;b.onclick=()=>document.getElementById(id).scrollIntoView({behavior:"smooth"});side.append(b);let g=document.createElement("section");g.className="group";g.id=id;g.innerHTML=`<div class="gh"><h2>${E(n)}</h2><span>${fs.length}개 항목</span></div><div class="fields"></div>`;fs.forEach(x=>g.querySelector(".fields").append(field(...x)));r.append(g)});let b=document.createElement("button");b.className="side-link";b.textContent="매장 추가 / 관리";b.onclick=()=>$("#storeGroup").scrollIntoView({behavior:"smooth"});side.append(b);let g=document.createElement("section");g.className="store-manager";g.id="storeGroup";g.innerHTML=`<div class="store-manager-head"><div><h2>매장 추가 / 관리</h2><div style="font-size:10px;color:#7d8580;margin-top:3px">신규 매장은 원하는 만큼 계속 추가할 수 있습니다.</div></div><button id="addStore" class="add-store-btn">+ 신규 매장 추가</button></div><div id="storeManager" class="store-list"></div>`;r.append(g);$("#addStore").onclick=()=>{current["stores.items"].push(fresh());stores();D()};stores()}
-async function load(){let d=window.DODO_DEFAULT_CONTENT||{};if(location.protocol!=="file:"){try{let r=await fetch("content.json?_="+Date.now(),{cache:"no-store"});if(r.ok)d=await r.json()}catch(e){}}render(d)}
+async function load(){
+  let d=window.DODO_DEFAULT_CONTENT||{};
+
+  if(location.protocol==="file:"){
+    render(d);
+    return;
+  }
+
+  try{
+    S("GitHub의 최신 저장 내용을 불러오는 중입니다...");
+
+    const r=await fetch("/admin-api/content?_="+Date.now(),{
+      method:"GET",
+      credentials:"same-origin",
+      cache:"no-store",
+      redirect:"follow",
+      headers:{"Accept":"application/json"}
+    });
+
+    const ct=r.headers.get("content-type")||"";
+    if(!ct.includes("application/json")){
+      const text=await r.text();
+      if(r.redirected || /cloudflareaccess\.com|Log in to/i.test(text)){
+        throw new Error("Cloudflare Access 인증이 만료되었습니다. 페이지를 새로고침해 다시 로그인해주세요.");
+      }
+      throw new Error(`최신 데이터 서버가 예상하지 못한 응답을 보냈습니다. (${r.status})`);
+    }
+
+    const result=await r.json();
+    if(!r.ok || !result?.ok || !result?.content){
+      throw new Error(result?.error || `최신 데이터 불러오기 실패 (${r.status})`);
+    }
+
+    d=result.content;
+    render(d);
+    S("GitHub의 최신 저장 내용을 불러왔습니다.");
+  }catch(e){
+    console.error("DODO CMS load error:",e);
+    render(d);
+    S("최신 저장 내용을 불러오지 못했습니다: "+(e?.message||"알 수 없는 오류"),true);
+  }
+}
 function collect(){let d=C(current);document.querySelectorAll("[data-key]").forEach(x=>d[x.dataset.key]=x.type==="number"?Number(x.value):x.value);return d}
 function b64(ab){let a=new Uint8Array(ab),s="";for(let i=0;i<a.length;i+=32768)s+=String.fromCharCode(...a.subarray(i,Math.min(i+32768,a.length)));return btoa(s)}
 function nm(n){let e=(n.split(".").pop()||"jpg").replace(/[^a-zA-Z0-9]/g,"")||"jpg";return"cms-"+Date.now()+"-"+Math.random().toString(36).slice(2,7)+"."+e}
