@@ -271,3 +271,14 @@ button,input,textarea,select{font:inherit}
 .hero-ticket{
   display:none !important;
 }
+/* DODO CMS 이미지 깜빡임 방지
+   CMS 최신 이미지가 확정되기 전에는 HTML에 남아 있는 예전 기본 이미지를 숨깁니다. */
+img[data-cms-src]{
+  visibility:hidden;
+  opacity:0;
+}
+img[data-cms-src].cms-image-ready{
+  visibility:visible;
+  opacity:1;
+  transition:opacity .16s ease;
+}
