@@ -296,3 +296,22 @@ img[data-cms-src].cms-image-ready{
     object-position:center !important;
   }
 }
+/* 만화카페 도도 - 모바일 대표 이미지 원본 비율 전체 표시 */
+@media (max-width:640px){
+  .cafe-hero-photo{
+    height:auto !important;
+    min-height:0 !important;
+    max-height:none !important;
+    aspect-ratio:auto !important;
+    overflow:visible !important;
+  }
+
+  .cafe-hero-photo img{
+    display:block !important;
+    width:100% !important;
+    height:auto !important;
+    max-height:none !important;
+    object-fit:contain !important;
+    object-position:center center !important;
+  }
+}
