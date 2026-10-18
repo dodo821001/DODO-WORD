@@ -282,3 +282,17 @@ img[data-cms-src].cms-image-ready{
   opacity:1;
   transition:opacity .16s ease;
 }
+/* 만화카페 도도 - 모바일 메인 이미지 전체 보이기 */
+@media (max-width: 640px){
+  .sub-photo:has(img[data-cms-src="cafe.hero_image"]){
+    height:auto !important;
+    max-height:none !important;
+  }
+
+  .sub-photo img[data-cms-src="cafe.hero_image"]{
+    width:100% !important;
+    height:auto !important;
+    object-fit:contain !important;
+    object-position:center !important;
+  }
+}
