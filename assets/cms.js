@@ -1,4 +1,3 @@
-
 (function(){
   const asBool=v=>typeof v==="boolean"?v:!["false","0","off","no",""].includes(String(v??"").trim().toLowerCase());
   const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
@@ -18,6 +17,7 @@
       </div>
     </article>`;
   }
+
   function renderStores(d){
     const items=(d["stores.items"]||[]).filter(x=>asBool(x.visible));
     const all=document.getElementById("storesGrid");
@@ -25,33 +25,81 @@
     const preview=document.getElementById("storesPreview");
     if(preview) preview.innerHTML=items.slice(0,3).map(renderStoreCard).join("");
   }
-  function apply(d){ window.DODO_CURRENT_CONTENT=d || {};
+
+  function setCmsImage(el,src){
+    if(!src)return;
+    el.classList.remove("cms-image-ready");
+
+    let settled=false;
+    const reveal=()=>{
+      if(settled)return;
+      settled=true;
+      requestAnimationFrame(()=>el.classList.add("cms-image-ready"));
+    };
+
+    el.addEventListener("load",reveal,{once:true});
+    el.addEventListener("error",reveal,{once:true});
+    el.src=src;
+
+    // 캐시된 이미지도 정상 노출
+    if(el.complete) reveal();
+  }
+
+  function apply(d){
+    window.DODO_CURRENT_CONTENT=d||{};
     const root=document.documentElement;
+
     const vars={
       "theme.primary":"--forest","theme.secondary":"--forest-2","theme.accent":"--gold","theme.paper":"--paper",
       "typography.heading_color":"--heading-color","typography.body_color":"--body-color",
       "typography.muted_color":"--muted-color","typography.nav_color":"--nav-color"
     };
     Object.entries(vars).forEach(([k,v])=>{if(d[k])root.style.setProperty(v,d[k])});
-    const sizes={"typography.body_size":"--body-size","typography.h1_size":"--h1-size","typography.h2_size":"--h2-size","typography.card_title_size":"--card-title-size"};
-    Object.entries(sizes).forEach(([k,v])=>{if(d[k]!==undefined&&d[k]!=="")root.style.setProperty(v,Number(d[k])+"px")});
+
+    const sizes={
+      "typography.body_size":"--body-size","typography.h1_size":"--h1-size",
+      "typography.h2_size":"--h2-size","typography.card_title_size":"--card-title-size"
+    };
+    Object.entries(sizes).forEach(([k,v])=>{
+      if(d[k]!==undefined&&d[k]!=="")root.style.setProperty(v,Number(d[k])+"px")
+    });
 
     document.querySelectorAll("[data-cms]").forEach(el=>{
-      const k=el.dataset.cms;if(!(k in d))return;
+      const k=el.dataset.cms;
+      if(!(k in d))return;
       el.dataset.cmsHtml==="1"?el.innerHTML=d[k]:el.textContent=d[k]??"";
     });
-    document.querySelectorAll("[data-cms-href]").forEach(el=>{const k=el.dataset.cmsHref;if(d[k])el.href=d[k]});
-    document.querySelectorAll("[data-cms-src]").forEach(el=>{const k=el.dataset.cmsSrc;if(d[k])el.src=d[k]});
+
+    document.querySelectorAll("[data-cms-href]").forEach(el=>{
+      const k=el.dataset.cmsHref;
+      if(d[k])el.href=d[k];
+    });
+
+    document.querySelectorAll("[data-cms-src]").forEach(el=>{
+      const k=el.dataset.cmsSrc;
+      if(d[k])setCmsImage(el,d[k]);
+    });
+
     document.querySelectorAll("[data-cms-visible]").forEach(el=>{
       const k=el.dataset.cmsVisible,raw=d[k];
-      const show=(k.endsWith("_url")||k.endsWith("_phone")||k.endsWith("_email"))?!!String(raw??"").trim():asBool(raw);
+      const show=(k.endsWith("_url")||k.endsWith("_phone")||k.endsWith("_email"))
+        ?!!String(raw??"").trim():asBool(raw);
       el.classList.toggle("cms-hidden",!show);
     });
+
     renderStores(d);
   }
+
   const fallback=window.DODO_DEFAULT_CONTENT||{};
-  apply(fallback);
-  if(location.protocol!=="file:"){
-    fetch("content.json?_="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():Promise.reject()).then(apply).catch(()=>{});
+
+  // 공개 페이지에서는 최신 content.json을 먼저 받은 다음 이미지를 표시합니다.
+  // 그래서 HTML에 남아 있는 예전 기본 사진이 순간적으로 보이지 않습니다.
+  if(location.protocol==="file:"){
+    apply(fallback);
+  }else{
+    fetch("content.json?_="+Date.now(),{cache:"no-store"})
+      .then(r=>r.ok?r.json():Promise.reject(new Error("content.json load failed")))
+      .then(apply)
+      .catch(()=>apply(fallback));
   }
 })();
