@@ -1,7 +1,49 @@
 <!doctype html><html lang="ko"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#17372f"><title>가맹문의 | DODO WORLD</title>
-<link rel="stylesheet" href="assets/style.css"></head><body>
+<link rel="stylesheet" href="assets/style.css"><script>
+/* DODO V11: CMS 데이터를 문서 파싱과 동시에 먼저 불러와 이미지 표시 지연을 줄입니다. */
+window.__DODO_CMS_EARLY__ = fetch("/cms-public/content", {
+  method: "GET",
+  cache: "no-store",
+  credentials: "omit",
+  headers: {"Accept":"application/json"}
+}).then(function(r){
+  if(!r.ok) throw new Error("public cms api failed");
+  return r.json();
+}).then(function(j){
+  if(!j || !j.ok || !j.content) throw new Error("invalid cms response");
+  var d = j.content;
+  var page = (location.pathname.split("/").pop() || "index.html").toLowerCase();
+  var keys = [];
+
+  if(page === "index.html" || page === ""){
+    keys = ["home.v2_hero_image", "home.feature3_image"];
+  }else if(page === "cafe.html"){
+    keys = ["cafe.hero_image", "cafe.food_image"];
+  }else if(page === "about.html"){
+    keys = ["about.hero_image"];
+  }else if(page === "stores.html"){
+    keys = ["stores.next_image"];
+  }
+
+  window.__DODO_CMS_PRELOAD_HOLD__ = [];
+  keys.forEach(function(k){
+    var src = d[k];
+    if(!src) return;
+    var img = new Image();
+    img.decoding = "async";
+    try { img.fetchPriority = "high"; } catch(e){}
+    img.src = src;
+    window.__DODO_CMS_PRELOAD_HOLD__.push(img);
+  });
+
+  return d;
+}).catch(function(){
+  return null;
+});
+</script>
+</head><body>
 <header class="navbar light">
   <div class="container nav-inner">
     <a class="brand" href="index.html">
@@ -51,4 +93,4 @@
   </div>
   <div class="footer-bottom" data-cms="global.footer">DODO F&B · MANGA CAFE DODO · DODO WORLD</div>
 </div></footer>
-<script src="assets/default-content.js"></script><script src="assets/cms.js?v=20261021-v10"></script><script src="assets/app.js"></script></body></html>
+<script src="assets/default-content.js"></script><script src="assets/cms.js?v=20261021-v11"></script><script src="assets/app.js"></script></body></html>
