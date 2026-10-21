@@ -32,39 +32,15 @@
 <section class="section alt"><div class="container">
   <div class="form-panel reveal">
     <aside class="form-side"><div class="eyebrow">START YOUR JOURNEY</div><h3 data-cms="franchise.panel_title" data-cms-html="1">만화카페 도도와<br>함께 시작하세요.</h3><p data-cms="franchise.panel_desc">상권 분석부터 매장 운영, 메뉴와 콘텐츠 구성까지 실제 운영 경험을 바탕으로 함께 준비합니다.</p><div class="franchise-contact"><div data-cms-visible="franchise.contact_phone">☎ <span data-cms="franchise.contact_phone"></span></div><div data-cms-visible="franchise.contact_email">✉ <span data-cms="franchise.contact_email"></span></div><a data-cms-visible="franchise.kakao_url" data-cms-href="franchise.kakao_url" href="#" target="_blank">카카오 문의 →</a></div></aside>
-    <form id="franchiseForm" class="form" data-cms-visible="franchise.show_form" novalidate>
-      <div class="field"><label for="inqName">이름 *</label><input id="inqName" name="name" required autocomplete="name" placeholder="이름"></div>
-      <div class="field"><label for="inqPhone">연락처 *</label><input id="inqPhone" name="phone" required inputmode="tel" autocomplete="tel" placeholder="010-0000-0000"></div>
-      <div class="field"><label for="inqRegion">창업 희망 지역 *</label><input id="inqRegion" name="region" required placeholder="예: 서울 강남구"></div>
-      <div class="field"><label for="inqStore">점포 보유 여부</label><select id="inqStore" name="store_owned"><option value="">선택해주세요</option><option value="보유">보유</option><option value="미보유">미보유</option></select></div>
-      <div class="field"><label for="inqSize">예상 평수</label><input id="inqSize" name="size" placeholder="예: 100평"></div>
-      <div class="field"><label for="inqOpen">예상 오픈 시기</label><input id="inqOpen" name="open_date" placeholder="예: 2027년 상반기"></div>
-      <div class="field full"><label for="inqMessage">문의내용</label><textarea id="inqMessage" name="message" placeholder="궁금한 내용을 남겨주세요."></textarea></div>
-
-      <div class="field full privacy-box">
-        <label class="privacy-check">
-          <input id="inqPrivacy" type="checkbox" required>
-          <span data-cms="franchise.privacy_text">개인정보 수집 및 이용에 동의합니다.</span>
-        </label>
-        <details class="privacy-detail">
-          <summary>자세히 보기</summary>
-          <p data-cms="franchise.privacy_detail">수집항목: 이름, 연락처, 희망지역, 점포 보유 여부, 예상 평수, 예상 오픈 시기, 문의내용 / 이용목적: 창업상담 및 문의 회신 / 보유기간: 상담 종료 후 1년</p>
-        </details>
-      </div>
-
-      <div class="hp-field" aria-hidden="true">
-        <label>회사명</label><input name="company" tabindex="-1" autocomplete="off">
-      </div>
-
-      <input type="hidden" name="source" value="DODO 홈페이지">
-      <input type="hidden" name="page_url" id="inqPageUrl" value="">
-
-      <div class="field full">
-        <button id="inquirySubmit" class="btn" style="background:var(--forest);color:white;border:0;width:100%;cursor:pointer" type="submit">
-          <span data-cms="franchise.submit_text">창업 상담 신청하기</span>
-        </button>
-        <div id="inquiryStatus" class="inquiry-status" role="status" aria-live="polite"></div>
-      </div>
+    <form id="franchiseForm" class="form" data-cms-visible="franchise.show_form">
+      <div class="field"><label>이름</label><input required placeholder="이름"></div>
+      <div class="field"><label>연락처</label><input required placeholder="010-0000-0000"></div>
+      <div class="field"><label>창업 희망 지역</label><input placeholder="예: 서울 강남구"></div>
+      <div class="field"><label>점포 보유 여부</label><select><option>선택해주세요</option><option>보유</option><option>미보유</option></select></div>
+      <div class="field"><label>예상 평수</label><input placeholder="예: 100평"></div>
+      <div class="field"><label>예상 오픈 시기</label><input placeholder="예: 2027년 상반기"></div>
+      <div class="field full"><label>문의내용</label><textarea placeholder="궁금한 내용을 남겨주세요."></textarea></div>
+      <div class="field full"><button class="btn" style="background:var(--forest);color:white;border:0;width:100%;cursor:pointer" type="submit"><span data-cms="franchise.submit_text">창업 상담 신청하기</span></button></div>
     </form>
   </div>
 </div></section>
@@ -75,4 +51,4 @@
   </div>
   <div class="footer-bottom" data-cms="global.footer">DODO F&B · MANGA CAFE DODO · DODO WORLD</div>
 </div></footer>
-<script src="assets/default-content.js"></script><script src="assets/cms.js?v=20261021-v8"></script><script src="assets/app.js"></script></body></html>
+<script src="assets/default-content.js"></script><script src="assets/cms.js?v=20261021-v10"></script><script src="assets/app.js"></script></body></html>
