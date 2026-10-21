@@ -32,24 +32,30 @@
 
     const isCms=/^assets\/images\/cms\/[A-Za-z0-9._-]+$/.test(src);
     let attempt=0;
-    const delays=[0,1200,2500,5000,9000];
+    const retryDelays=[0,900,1800,3500];
 
     const reveal=()=>{
       requestAnimationFrame(()=>el.classList.add("cms-image-ready"));
     };
 
     const load=()=>{
-      const suffix=isCms ? (src.includes("?")?"&":"?")+"v="+Date.now()+"-"+attempt : "";
+      // 첫 요청은 원래 파일 경로 그대로 사용해서 브라우저/CDN 캐시를 살립니다.
+      // 새 이미지가 아직 GitHub Pages에 배포되지 않아 실패했을 때만 캐시 우회 재시도합니다.
+      const url = attempt===0
+        ? src
+        : src + (src.includes("?")?"&":"?") + "retry=" + Date.now() + "-" + attempt;
+
       el.onload=()=>reveal();
       el.onerror=()=>{
         attempt++;
-        if(isCms && attempt<delays.length){
-          setTimeout(load,delays[attempt]);
+        if(isCms && attempt<retryDelays.length){
+          setTimeout(load,retryDelays[attempt]);
         }else{
           reveal();
         }
       };
-      el.src=src+suffix;
+
+      el.src=url;
       if(el.complete && el.naturalWidth>0) reveal();
     };
 
