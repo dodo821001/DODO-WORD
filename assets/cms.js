@@ -136,3 +136,52 @@
       });
   }
 })();
+
+/* DODO V10 - basic image save deterrence
+   - Blocks right-click context menu on the public site
+   - Blocks image dragging
+   - Suppresses long-press image callout on supported mobile browsers
+   Note: this deters ordinary saving; it cannot prevent screenshots/devtools/network capture.
+*/
+(()=>{
+  if(window.__DODO_IMAGE_PROTECT_V10__) return;
+  window.__DODO_IMAGE_PROTECT_V10__ = true;
+
+  const style = document.createElement('style');
+  style.id = 'dodo-image-protect-v10-style';
+  style.textContent = `
+    img,
+    picture,
+    figure,
+    .hero-media,
+    .large-photo,
+    .stack-photo,
+    .story-image,
+    .franchise-visual,
+    .food-image,
+    .trust-image,
+    .sub-photo,
+    .store-card .photo,
+    .cafe-mosaic figure {
+      -webkit-user-drag: none !important;
+      -webkit-touch-callout: none !important;
+      user-select: none !important;
+      -webkit-user-select: none !important;
+    }
+    img { pointer-events: auto; }
+  `;
+  (document.head || document.documentElement).appendChild(style);
+
+  // PC: block right-click menu across the public page.
+  document.addEventListener('contextmenu', (e)=>{
+    e.preventDefault();
+  }, {capture:true});
+
+  // Prevent dragging images out of the page.
+  document.addEventListener('dragstart', (e)=>{
+    const target = e.target;
+    if(target && target.closest && target.closest('img, picture, figure')){
+      e.preventDefault();
+    }
+  }, {capture:true});
+})();
