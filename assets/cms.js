@@ -6,8 +6,9 @@
     const tags=(s.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join("");
     const phone=s.phone?`<div>☎ ${esc(s.phone)}</div>`:"";
     const map=s.map_url?`<a class="store-map-btn" href="${esc(s.map_url)}" target="_blank" rel="noopener">지도에서 보기 →</a>`:"";
+    const image=esc(s.image||"assets/images/v2-hero.webp");
     return `<article class="store-card reveal show">
-      <div class="photo"><img src="${esc(s.image||"assets/images/v2-hero.webp")}" alt="${esc(s.name||"")}"></div>
+      <div class="photo"><img data-store-image="${image}" alt="${esc(s.name||"")}"></div>
       <div class="body">
         <div class="eyebrow">${esc(s.region||"")}</div>
         <h3>${esc(s.name||"")}</h3>
@@ -18,12 +19,26 @@
     </article>`;
   }
 
+  function activateStoreImages(root){
+    if(!root)return;
+    root.querySelectorAll("img[data-store-image]").forEach(img=>{
+      const src=img.dataset.storeImage;
+      if(src)setCmsImage(img,src,"stores.items.image");
+    });
+  }
+
   function renderStores(d){
     const items=(d["stores.items"]||[]).filter(x=>asBool(x.visible));
     const all=document.getElementById("storesGrid");
-    if(all) all.innerHTML=items.map(renderStoreCard).join("");
+    if(all){
+      all.innerHTML=items.map(renderStoreCard).join("");
+      activateStoreImages(all);
+    }
     const preview=document.getElementById("storesPreview");
-    if(preview) preview.innerHTML=items.slice(0,3).map(renderStoreCard).join("");
+    if(preview){
+      preview.innerHTML=items.slice(0,3).map(renderStoreCard).join("");
+      activateStoreImages(preview);
+    }
   }
 
   function setCmsImage(el,src,key){
