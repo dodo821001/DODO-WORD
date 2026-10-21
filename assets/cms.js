@@ -30,19 +30,30 @@
     if(!src)return;
     el.classList.remove("cms-image-ready");
 
-    let settled=false;
+    const isCms=/^assets\/images\/cms\/[A-Za-z0-9._-]+$/.test(src);
+    let attempt=0;
+    const delays=[0,1200,2500,5000,9000];
+
     const reveal=()=>{
-      if(settled)return;
-      settled=true;
       requestAnimationFrame(()=>el.classList.add("cms-image-ready"));
     };
 
-    el.addEventListener("load",reveal,{once:true});
-    el.addEventListener("error",reveal,{once:true});
-    el.src=src;
+    const load=()=>{
+      const suffix=isCms ? (src.includes("?")?"&":"?")+"v="+Date.now()+"-"+attempt : "";
+      el.onload=()=>reveal();
+      el.onerror=()=>{
+        attempt++;
+        if(isCms && attempt<delays.length){
+          setTimeout(load,delays[attempt]);
+        }else{
+          reveal();
+        }
+      };
+      el.src=src+suffix;
+      if(el.complete && el.naturalWidth>0) reveal();
+    };
 
-    // 캐시된 이미지도 정상 노출
-    if(el.complete) reveal();
+    load();
   }
 
   function apply(d){
