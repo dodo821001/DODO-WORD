@@ -103,14 +103,30 @@
 
   const fallback=window.DODO_DEFAULT_CONTENT||{};
 
-  // 공개 페이지에서는 최신 content.json을 먼저 받은 다음 이미지를 표시합니다.
-  // 그래서 HTML에 남아 있는 예전 기본 사진이 순간적으로 보이지 않습니다.
+  // 공개 홈페이지도 GitHub의 최신 content.json을 Worker를 통해 직접 읽습니다.
+  // GitHub Pages 배포 지연 때문에 CMS 저장 직후 예전 내용이 보이는 문제를 방지합니다.
   if(location.protocol==="file:"){
     apply(fallback);
   }else{
-    fetch("content.json?_="+Date.now(),{cache:"no-store"})
-      .then(r=>r.ok?r.json():Promise.reject(new Error("content.json load failed")))
+    fetch("/cms-public/content?_="+Date.now(),{
+      method:"GET",
+      cache:"no-store",
+      credentials:"omit",
+      headers:{"Accept":"application/json"}
+    })
+      .then(async r=>{
+        if(!r.ok) throw new Error("public cms api failed");
+        const j=await r.json();
+        if(!j?.ok || !j?.content) throw new Error(j?.error||"invalid cms response");
+        return j.content;
+      })
       .then(apply)
-      .catch(()=>apply(fallback));
+      .catch(()=>{
+        // Worker 경로가 일시적으로 문제여도 기존 content.json으로 폴백
+        fetch("content.json?_="+Date.now(),{cache:"no-store"})
+          .then(r=>r.ok?r.json():Promise.reject(new Error("content.json load failed")))
+          .then(apply)
+          .catch(()=>apply(fallback));
+      });
   }
 })();
