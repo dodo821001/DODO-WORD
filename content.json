@@ -133,17 +133,19 @@
       "visible": true,
       "region": "SEOUL · GANGNAM",
       "name": "강남본점",
-      "desc": "도도의 첫번째 여행을 경험할 수 있는 강남의 대표 매장.",
-      "image": "assets/images/brand-shelf.webp",
+      "desc": "",
+      "image": "assets/images/cms/cms-1792594780170-lwq4r.png",
       "address": "서울 강남구 강남대로94길 18 B2",
-      "hours": "영업시간 입력",
-      "phone": "",
+      "hours": "AM 10:00 ~ PM 11:00",
+      "phone": "0507-1342-1258",
       "map_url": "",
       "tags": [
-        "만화",
+        "웹툰",
+        "만화책",
         "OTT",
-        "게임",
-        "푸드"
+        "보드게임",
+        "닌텐도스위치2",
+        "코타츠"
       ]
     },
     {
@@ -151,16 +153,19 @@
       "visible": true,
       "region": "SEOUL · BANGI",
       "name": "방이점",
-      "desc": "기차 여행 모티프와 프라이빗한 공간이 어우러진 도도의 또 다른 여행지.",
-      "image": "assets/images/train-rooms.webp",
-      "address": "주소 입력",
-      "hours": "영업시간 입력",
-      "phone": "",
+      "desc": "",
+      "image": "assets/images/cms/cms-1792594780211-2gs1b.png",
+      "address": "서울 송파구 오금로13길 9 B1층",
+      "hours": "AM 10:00 ~ PM 11:00",
+      "phone": "070-8844-1549",
       "map_url": "",
       "tags": [
-        "OTT룸",
-        "코타츠",
-        "보드게임"
+        "웹툰",
+        "만화책",
+        "OTT",
+        "보드게임",
+        "닌텐도스위치2",
+        "코타츠"
       ]
     },
     {
@@ -168,16 +173,19 @@
       "visible": true,
       "region": "ULSAN · DESIGN STREET",
       "name": "울산디자인거리점",
-      "desc": "울산에서도 이어지는 도도의 공간과 콘텐츠 경험.",
-      "image": "assets/images/corridor.webp",
-      "address": "주소 입력",
-      "hours": "영업시간 입력",
-      "phone": "",
+      "desc": "",
+      "image": "assets/images/cms/cms-1792594780251-08an3.png",
+      "address": "울산 남구 돋질로302번길 33 4층",
+      "hours": "평일 AM 10:00 ~ PM 11:00, 주말 AM 09:00 ~ PM 11:00",
+      "phone": "010-8137-3317",
       "map_url": "",
       "tags": [
-        "만화",
-        "휴식",
-        "먹거리"
+        "웹툰",
+        "만화책",
+        "OTT",
+        "보드게임",
+        "닌텐도스위치2",
+        "코타츠"
       ]
     }
   ],
