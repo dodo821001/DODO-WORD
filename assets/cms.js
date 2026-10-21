@@ -26,8 +26,12 @@
     if(preview) preview.innerHTML=items.slice(0,3).map(renderStoreCard).join("");
   }
 
-  function setCmsImage(el,src){
+  function setCmsImage(el,src,key){
     if(!src)return;
+    const highPriority = ["home.v2_hero_image","home.feature3_image","cafe.hero_image","cafe.food_image"].includes(key);
+    try { el.fetchPriority = highPriority ? "high" : "auto"; } catch(e){}
+    el.loading = "eager";
+    el.decoding = "async";
     el.classList.remove("cms-image-ready");
 
     const isCms=/^assets\/images\/cms\/[A-Za-z0-9._-]+$/.test(src);
@@ -94,7 +98,7 @@
 
     document.querySelectorAll("[data-cms-src]").forEach(el=>{
       const k=el.dataset.cmsSrc;
-      if(d[k])setCmsImage(el,d[k]);
+      if(d[k])setCmsImage(el,d[k],k);
     });
 
     document.querySelectorAll("[data-cms-visible]").forEach(el=>{
@@ -109,31 +113,39 @@
 
   const fallback=window.DODO_DEFAULT_CONTENT||{};
 
-  // 공개 홈페이지도 GitHub의 최신 content.json을 Worker를 통해 직접 읽습니다.
-  // GitHub Pages 배포 지연 때문에 CMS 저장 직후 예전 내용이 보이는 문제를 방지합니다.
-  if(location.protocol==="file:"){
-    apply(fallback);
-  }else{
-    fetch("/cms-public/content?_="+Date.now(),{
+  // V11: <head>에서 이미 시작한 CMS 요청을 재사용합니다.
+  // 따라서 HTML 파싱이 끝난 뒤에야 CMS 요청을 시작하던 기존 지연을 줄입니다.
+  function loadPublicContent(){
+    return fetch("/cms-public/content",{
       method:"GET",
       cache:"no-store",
       credentials:"omit",
       headers:{"Accept":"application/json"}
-    })
-      .then(async r=>{
-        if(!r.ok) throw new Error("public cms api failed");
-        const j=await r.json();
-        if(!j?.ok || !j?.content) throw new Error(j?.error||"invalid cms response");
-        return j.content;
-      })
+    }).then(async r=>{
+      if(!r.ok) throw new Error("public cms api failed");
+      const j=await r.json();
+      if(!j?.ok || !j?.content) throw new Error(j?.error||"invalid cms response");
+      return j.content;
+    });
+  }
+
+  function loadFallbackContent(){
+    return fetch("content.json",{cache:"no-store"})
+      .then(r=>r.ok?r.json():Promise.reject(new Error("content.json load failed")));
+  }
+
+  if(location.protocol==="file:"){
+    apply(fallback);
+  }else{
+    const early = window.__DODO_CMS_EARLY__;
+    const source = early && typeof early.then==="function"
+      ? early.then(d=>d || loadPublicContent())
+      : loadPublicContent();
+
+    source
       .then(apply)
-      .catch(()=>{
-        // Worker 경로가 일시적으로 문제여도 기존 content.json으로 폴백
-        fetch("content.json?_="+Date.now(),{cache:"no-store"})
-          .then(r=>r.ok?r.json():Promise.reject(new Error("content.json load failed")))
-          .then(apply)
-          .catch(()=>apply(fallback));
-      });
+      .catch(()=>loadFallbackContent().then(apply))
+      .catch(()=>apply(fallback));
   }
 })();
 
