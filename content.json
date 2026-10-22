@@ -1,6 +1,6 @@
 {
   "global.logo_subtitle": "만화카페 도도",
-  "global.footer": "DODO F&B · MANGA CAFE DODO · DODO WORLD",
+  "global.footer": "DODO F&B · BOOK CAFE DODO · DODO WORLD",
   "home.banner_title": "도도 월드에 오신 것을 환영합니다 :)",
   "home.banner_subtitle": "지도를 따라 도도의 첫번째 여행을 시작해보세요.",
   "home.map_title": "오늘은 어디로<br>떠나볼까요?",
@@ -189,7 +189,7 @@
       ]
     }
   ],
-  "home.v2_eyebrow": "MANGA CAFE DODO · SINCE 2025",
+  "home.v2_eyebrow": "BOOK CAFE DODO · SINCE 2025",
   "home.v2_title": "책 한 권에서 시작되는,<br>도도의 첫번째 여행",
   "home.v2_desc": "만화, OTT, 게임, 먹거리 그리고 휴식. 도도는 머무는 시간 자체가 하나의 여행이 되는 공간을 만듭니다.",
   "home.v2_cta1_label": "브랜드 이야기",
