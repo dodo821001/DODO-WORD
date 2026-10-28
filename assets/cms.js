@@ -84,7 +84,14 @@
 
   function applyHeaderLogo(d){
     const src=String(d["global.logo_image"]||"").trim();
-    if(!src)return;
+
+    // CMS 로고가 없을 때만 기존 D 기본 로고를 보여줍니다.
+    if(!src){
+      document.querySelectorAll(".brand-seal").forEach(seal=>{
+        seal.classList.add("logo-resolved","use-default-logo");
+      });
+      return;
+    }
 
     const isCms=/^assets\/images\/cms\/[A-Za-z0-9._-]+$/.test(src);
 
@@ -108,7 +115,8 @@
 
         img.onload=()=>{
           seal.replaceChildren(img);
-          seal.classList.add("has-cms-logo");
+          seal.classList.remove("use-default-logo");
+          seal.classList.add("has-cms-logo","logo-resolved");
           seal.dataset.dodoLogoSrc=src;
         };
 
@@ -116,6 +124,8 @@
           attempt++;
           if(isCms && attempt<retryDelays.length){
             setTimeout(load,retryDelays[attempt]);
+          }else{
+            seal.classList.add("logo-resolved","use-default-logo");
           }
         };
 
@@ -243,6 +253,13 @@
       -webkit-user-select: none !important;
     }
     img { pointer-events: auto; }
+    /* V14: CMS 로고가 결정되기 전 기존 D가 순간적으로 보이는 현상 방지 */
+    .brand-seal{
+      color:transparent !important;
+    }
+    .brand-seal.logo-resolved.use-default-logo{
+      color:inherit !important;
+    }
     .brand-seal.has-cms-logo{
       width:50px !important;
       height:50px !important;
