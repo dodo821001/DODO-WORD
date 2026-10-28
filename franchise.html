@@ -49,11 +49,20 @@ window.__DODO_CMS_EARLY__ = fetch("/cms-public/content", {
   return null;
 });
 </script>
+<style id="dodo-logo-first-paint">
+/* V16: 첫 화면에서 기존 D가 1프레임 보이는 현상 방지 */
+html .brand-seal:not(.logo-resolved){
+  visibility:hidden !important;
+}
+html .brand-seal.logo-resolved.use-default-logo{
+  display:none !important;
+}
+</style>
 </head><body>
 <header class="navbar light">
   <div class="container nav-inner">
     <a class="brand" href="index.html">
-      <span class="brand-seal">D</span>
+      <span class="brand-seal" aria-hidden="true"></span>
       <span class="brand-copy"><strong data-cms="global.site_name">DODO WORLD</strong><small data-cms="global.logo_subtitle">만화카페 도도</small></span>
     </a>
     <nav class="nav-links">
