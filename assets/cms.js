@@ -81,9 +81,56 @@
     load();
   }
 
+
+  function applyHeaderLogo(d){
+    const src=String(d["global.logo_image"]||"").trim();
+    if(!src)return;
+
+    const isCms=/^assets\/images\/cms\/[A-Za-z0-9._-]+$/.test(src);
+
+    document.querySelectorAll(".brand-seal").forEach(seal=>{
+      if(seal.dataset.dodoLogoSrc===src && seal.querySelector("img[data-dodo-header-logo]"))return;
+
+      let attempt=0;
+      const retryDelays=[0,900,1800,3500];
+
+      const load=()=>{
+        const img=new Image();
+        img.alt="DODO WORLD";
+        img.setAttribute("data-dodo-header-logo","");
+        img.decoding="async";
+        img.loading="eager";
+        try{img.fetchPriority="high"}catch(e){}
+
+        const url=attempt===0
+          ? src
+          : src+(src.includes("?")?"&":"?")+"retry="+Date.now()+"-"+attempt;
+
+        img.onload=()=>{
+          seal.replaceChildren(img);
+          seal.classList.add("has-cms-logo");
+          seal.dataset.dodoLogoSrc=src;
+        };
+
+        img.onerror=()=>{
+          attempt++;
+          if(isCms && attempt<retryDelays.length){
+            setTimeout(load,retryDelays[attempt]);
+          }
+        };
+
+        img.src=url;
+      };
+
+      load();
+    });
+  }
+
   function apply(d){
     window.DODO_CURRENT_CONTENT=d||{};
     const root=document.documentElement;
+
+    applyHeaderLogo(d);
 
     const vars={
       "theme.primary":"--forest","theme.secondary":"--forest-2","theme.accent":"--gold","theme.paper":"--paper",
@@ -196,6 +243,31 @@
       -webkit-user-select: none !important;
     }
     img { pointer-events: auto; }
+    .brand-seal.has-cms-logo{
+      width:50px !important;
+      height:50px !important;
+      border:0 !important;
+      border-radius:0 !important;
+      overflow:visible !important;
+      display:flex !important;
+      align-items:center !important;
+      justify-content:center !important;
+      flex:0 0 50px !important;
+    }
+    .brand-seal.has-cms-logo:after{display:none !important;}
+    .brand-seal.has-cms-logo img[data-dodo-header-logo]{
+      width:100% !important;
+      height:100% !important;
+      object-fit:contain !important;
+      display:block !important;
+    }
+    @media(max-width:640px){
+      .brand-seal.has-cms-logo{
+        width:44px !important;
+        height:44px !important;
+        flex-basis:44px !important;
+      }
+    }
   `;
   (document.head || document.documentElement).appendChild(style);
 
