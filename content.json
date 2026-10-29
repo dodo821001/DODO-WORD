@@ -222,19 +222,9 @@
   "global.logo_image": "assets/images/cms/cms-1793149776890-a2nvr.webp",
   "popups.items": [
     {
-      "id": "popup-1793279557401-cdz2t",
-      "visible": true,
-      "image": "assets/images/cms/cms-1793279573518-uddc0.webp"
-    },
-    {
       "id": "popup-1793279561932-2bhrt",
       "visible": true,
       "image": "assets/images/cms/cms-1793279573690-1gi4l.webp"
-    },
-    {
-      "id": "popup-1793279563308-9jz4x",
-      "visible": true,
-      "image": "assets/images/cms/cms-1793279917693-0adck.webp"
     }
   ]
 }
