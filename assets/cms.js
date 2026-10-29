@@ -148,14 +148,15 @@
   }
 
   function ensurePopupStyles(){
-    if(document.getElementById("dodo-popup-style-v26"))return;
+    if(document.getElementById("dodo-popup-style-v27"))return;
     document.getElementById("dodo-popup-style-v22")?.remove();
     document.getElementById("dodo-popup-style-v23")?.remove();
     document.getElementById("dodo-popup-style-v24")?.remove();
     document.getElementById("dodo-popup-style-v25")?.remove();
+    document.getElementById("dodo-popup-style-v26")?.remove();
 
     const st=document.createElement("style");
-    st.id="dodo-popup-style-v26";
+    st.id="dodo-popup-style-v27";
     st.textContent=`
       .dodo-popup-layer{
         position:absolute;
@@ -168,14 +169,19 @@
           - 우측 세로 문구 왼쪽
         */
         top:clamp(118px,14vh,160px);
-        left:53vw;
-        right:10vw;
+
+        /*
+          메인 문구가 끝나는 지점과 화면 우측 끝 사이의
+          빈 공간을 하나의 영역으로 잡고 그 안에서 중앙 정렬
+        */
+        left:48vw;
+        right:5vw;
 
         display:flex;
         flex-wrap:wrap;
         align-items:flex-start;
         align-content:flex-start;
-        justify-content:flex-start;
+        justify-content:center;
         gap:12px;
         pointer-events:none;
       }
@@ -183,7 +189,7 @@
       .dodo-popup-card{
         position:relative;
         width:max-content;
-        max-width:min(620px,37vw);
+        max-width:min(620px,43vw);
         background:#fff;
         border-radius:14px;
         box-shadow:0 14px 44px rgba(0,0,0,.28);
@@ -195,7 +201,7 @@
       .dodo-popup-image-wrap{
         display:block;
         width:max-content;
-        max-width:min(620px,37vw);
+        max-width:min(620px,43vw);
         background:#fff;
         line-height:0;
       }
@@ -204,7 +210,7 @@
         display:block;
         width:auto;
         height:auto;
-        max-width:min(620px,37vw);
+        max-width:min(620px,43vw);
         max-height:calc(100vh - 220px);
         object-fit:contain;
       }
