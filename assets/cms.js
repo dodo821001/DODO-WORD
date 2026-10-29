@@ -148,16 +148,17 @@
   }
 
   function ensurePopupStyles(){
-    if(document.getElementById("dodo-popup-style-v25"))return;
+    if(document.getElementById("dodo-popup-style-v26"))return;
     document.getElementById("dodo-popup-style-v22")?.remove();
     document.getElementById("dodo-popup-style-v23")?.remove();
     document.getElementById("dodo-popup-style-v24")?.remove();
+    document.getElementById("dodo-popup-style-v25")?.remove();
 
     const st=document.createElement("style");
-    st.id="dodo-popup-style-v25";
+    st.id="dodo-popup-style-v26";
     st.textContent=`
       .dodo-popup-layer{
-        position:fixed;
+        position:absolute;
         z-index:99999;
 
         /*
@@ -227,32 +228,33 @@
         box-shadow:0 2px 10px rgba(0,0,0,.18);
       }
 
-      .dodo-popup-footer{
-        min-height:46px;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        padding:0 14px;
-        border-top:1px solid rgba(20,40,32,.10);
-        background:#fff;
-      }
 
       .dodo-popup-hide24{
-        width:100%;
+        position:absolute;
+        top:8px;
+        left:8px;
+        z-index:3;
+        width:auto;
         border:0;
-        background:transparent;
+        border-radius:999px;
+        background:rgba(255,255,255,.90);
         color:#31463f;
         font:inherit;
-        font-size:13px;
+        font-size:11px;
         font-weight:700;
+        line-height:1;
         cursor:pointer;
-        padding:13px 8px;
+        padding:8px 10px;
+        box-shadow:0 2px 10px rgba(0,0,0,.14);
+        backdrop-filter:blur(4px);
+        -webkit-backdrop-filter:blur(4px);
       }
 
       .dodo-popup-hide24:hover,
       .dodo-popup-hide24:focus-visible{
+        background:#fff;
         text-decoration:underline;
-        text-underline-offset:3px;
+        text-underline-offset:2px;
       }
 
       @keyframes dodoPopupIn{
@@ -396,13 +398,11 @@
       img.decoding="async";
       img.loading="eager";
 
-      const footer=document.createElement("div");
-      footer.className="dodo-popup-footer";
-
       const hide24=document.createElement("button");
       hide24.type="button";
       hide24.className="dodo-popup-hide24";
-      hide24.textContent="24시간 동안 보지 않기";
+      hide24.textContent="24시간 보지 않기";
+      hide24.setAttribute("aria-label","이 팝업을 24시간 동안 보지 않기");
       hide24.onclick=()=>{
         try{
           localStorage.setItem(item.key,String(Date.now()+24*60*60*1000));
@@ -410,8 +410,7 @@
         removePopupCard(card);
       };
 
-      footer.appendChild(hide24);
-      card.append(close,wrap,footer);
+      card.append(close,hide24,wrap);
 
       const isCms=/^assets\/images\/cms\/[A-Za-z0-9._-]+$/.test(item.src);
       let attempt=0;
