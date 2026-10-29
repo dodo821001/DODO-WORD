@@ -148,23 +148,33 @@
   }
 
   function ensurePopupStyles(){
-    if(document.getElementById("dodo-popup-style-v24"))return;
+    if(document.getElementById("dodo-popup-style-v25"))return;
     document.getElementById("dodo-popup-style-v22")?.remove();
     document.getElementById("dodo-popup-style-v23")?.remove();
+    document.getElementById("dodo-popup-style-v24")?.remove();
 
     const st=document.createElement("style");
-    st.id="dodo-popup-style-v24";
+    st.id="dodo-popup-style-v25";
     st.textContent=`
       .dodo-popup-layer{
         position:fixed;
         z-index:99999;
-        top:16px;
-        left:16px;
-        right:16px;
+
+        /*
+          데스크톱 안전영역
+          - 상단 로고/메뉴 아래
+          - 메인 카피 오른쪽
+          - 우측 세로 문구 왼쪽
+        */
+        top:clamp(118px,14vh,160px);
+        left:53vw;
+        right:10vw;
+
         display:flex;
         flex-wrap:wrap;
         align-items:flex-start;
         align-content:flex-start;
+        justify-content:flex-start;
         gap:12px;
         pointer-events:none;
       }
@@ -172,7 +182,7 @@
       .dodo-popup-card{
         position:relative;
         width:max-content;
-        max-width:calc(100vw - 32px);
+        max-width:min(620px,37vw);
         background:#fff;
         border-radius:14px;
         box-shadow:0 14px 44px rgba(0,0,0,.28);
@@ -184,7 +194,7 @@
       .dodo-popup-image-wrap{
         display:block;
         width:max-content;
-        max-width:calc(100vw - 32px);
+        max-width:min(620px,37vw);
         background:#fff;
         line-height:0;
       }
@@ -193,8 +203,8 @@
         display:block;
         width:auto;
         height:auto;
-        max-width:min(620px,calc(100vw - 32px));
-        max-height:calc(100vh - 92px);
+        max-width:min(620px,37vw);
+        max-height:calc(100vh - 220px);
         object-fit:contain;
       }
 
@@ -250,9 +260,28 @@
         to{opacity:1;transform:none}
       }
 
+      /* 태블릿: 본문을 너무 가리지 않도록 우측 절반 사용 */
+      @media(max-width:1100px) and (min-width:641px){
+        .dodo-popup-layer{
+          top:100px;
+          left:50vw;
+          right:24px;
+          gap:10px;
+        }
+        .dodo-popup-card,
+        .dodo-popup-image-wrap{
+          max-width:calc(50vw - 36px);
+        }
+        .dodo-popup-image{
+          max-width:calc(50vw - 36px);
+          max-height:calc(100vh - 180px);
+        }
+      }
+
+      /* 모바일: 화면 안쪽 상단. 페이지 스크롤은 계속 가능 */
       @media(max-width:640px){
         .dodo-popup-layer{
-          top:10px;
+          top:76px;
           left:10px;
           right:10px;
           gap:10px;
@@ -263,7 +292,7 @@
         }
         .dodo-popup-image{
           max-width:calc(100vw - 20px);
-          max-height:calc(100vh - 76px);
+          max-height:calc(100vh - 150px);
         }
         .dodo-popup-close{
           width:32px;
