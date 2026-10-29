@@ -5,16 +5,21 @@
   function renderStoreCard(s){
     const tags=(s.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join("");
     const phone=s.phone?`<div>☎ ${esc(s.phone)}</div>`:"";
-    const map=s.map_url?`<a class="store-map-btn" href="${esc(s.map_url)}" target="_blank" rel="noopener">지도에서 보기 →</a>`:"";
     const image=esc(s.image||"assets/images/v2-hero.webp");
+    const placeUrl=String(s.map_url||"").trim();
+    const storeName=esc(s.name||"");
+    const nameHtml=placeUrl
+      ? `<a class="store-name-link" href="${esc(placeUrl)}" target="_blank" rel="noopener noreferrer" aria-label="${storeName} 네이버 플레이스 열기">${storeName}</a>`
+      : storeName;
+
     return `<article class="store-card reveal show">
-      <div class="photo"><img data-store-image="${image}" alt="${esc(s.name||"")}"></div>
+      <div class="photo"><img data-store-image="${image}" alt="${storeName}"></div>
       <div class="body">
         <div class="eyebrow">${esc(s.region||"")}</div>
-        <h3>${esc(s.name||"")}</h3>
+        <h3>${nameHtml}</h3>
         <p>${esc(s.desc||"")}</p>
         <div class="store-detail"><div>📍 ${esc(s.address||"")}</div><div>🕒 ${esc(s.hours||"")}</div>${phone}</div>
-        <div class="meta">${tags}</div>${map}
+        <div class="meta">${tags}</div>
       </div>
     </article>`;
   }
