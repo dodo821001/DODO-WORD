@@ -20,10 +20,237 @@ function field(k,l,t){let f=document.createElement("div");f.className="field "+(
  if(t==="number"){let x=document.createElement("input");x.type="number";x.min="10";x.max="140";x.value=current[k]??"";x.dataset.key=k;x.oninput=()=>{current[k]=Number(x.value);D()};f.append(x);return f}
  if(t==="image"){let box=document.createElement("div");box.className="image-field";let p=document.createElement("div");p.className="image-preview";let im=document.createElement("img");im.src=adminImageSrc(current[k]);p.append(im);let ctr=document.createElement("div");ctr.className="image-controls";let x=document.createElement("input");x.value=current[k]||"";x.dataset.key=k;let fi=document.createElement("input");fi.type="file";fi.accept="image/*";let h=document.createElement("div");h.className="image-help";h.textContent="이미지 선택 가능 · 저장 시 최대 1920px / WebP로 자동 최적화됩니다.";x.oninput=()=>{current[k]=x.value;im.src=adminImageSrc(x.value);D()};fi.onchange=()=>{let q=fi.files?.[0];if(!q)return;pendingFiles.set(k,q);im.src=URL.createObjectURL(q);h.textContent="새 이미지 선택됨 · 저장 시 함께 업로드";D()};ctr.append(x,fi,h);box.append(p,ctr);f.append(box);return f}
  let x=(t==="textarea"||t==="html")?document.createElement("textarea"):document.createElement("input");x.value=current[k]??"";x.dataset.key=k;x.oninput=()=>{current[k]=x.value;D()};f.append(x);return f}
+
+function freshPopup(){
+  return{
+    id:"popup-"+Date.now()+"-"+Math.random().toString(36).slice(2,7),
+    visible:true,
+    image:""
+  };
+}
+
+function legacyPopupItems(d){
+  const items=[];
+  for(let i=1;i<=3;i++){
+    const enabled=(i===1 && d["popup1.enabled"]===undefined)
+      ? d["popup.enabled"]
+      : d[`popup${i}.enabled`];
+
+    const image=(i===1 && !String(d["popup1.image"]||"").trim())
+      ? d["popup.image"]
+      : d[`popup${i}.image`];
+
+    const src=String(image||"").trim();
+    if(src){
+      items.push({
+        id:"popup-legacy-"+i,
+        visible:B(enabled),
+        image:src
+      });
+    }
+  }
+  return items;
+}
+
+function popupItems(){
+  let h=$("#popupManager");
+  if(!h)return;
+  h.innerHTML="";
+
+  const items=current["popups.items"]||[];
+
+  if(!items.length){
+    h.innerHTML=`<div style="padding:28px 18px;text-align:center;color:#7d8580;border:1px dashed #cfd7d2;border-radius:14px;background:#fafbf9">
+      등록된 팝업이 없습니다. 위의 <b>+ 신규 팝업 추가</b>를 눌러주세요.
+    </div>`;
+    return;
+  }
+
+  items.forEach((p,i)=>{
+    let c=document.createElement("div");
+    c.className="store-edit-card";
+    c.innerHTML=`
+      <div class="store-edit-top">
+        <div class="store-edit-title">
+          <span class="store-index">${i+1}</span>
+          <span>팝업 ${i+1}</span>
+        </div>
+        <div class="store-actions">
+          <button data-up>↑ 위로</button>
+          <button data-down>↓ 아래로</button>
+          <button class="danger" data-del>삭제</button>
+        </div>
+      </div>
+      <div class="store-fields">
+        <div>
+          <label>노출 여부</label>
+          <div class="store-visible-row">
+            <input type="checkbox" data-f="visible" ${B(p.visible)?"checked":""}>
+            홈페이지에 표시
+          </div>
+          <small style="display:block;margin-top:6px;color:#777">체크를 풀면 이 팝업만 노출되지 않습니다.</small>
+        </div>
+        <div class="wide">
+          <label>팝업 이미지</label>
+          <div class="store-image-row">
+            <div class="store-image-preview" style="height:auto;min-height:120px;max-height:300px">
+              <img data-img src="${E(adminImageSrc(p.image))}" style="max-height:280px;object-fit:contain">
+            </div>
+            <div class="store-image-controls">
+              <input data-f="image" value="${E(p.image)}" placeholder="이미지 경로">
+              <input type="file" accept="image/*" data-file>
+              <small style="display:block;margin-top:6px;color:#777">
+                이미지 비율과 크기에 따라 실제 팝업 크기가 달라집니다. 큰 이미지만 화면 크기에 맞춰 자동 축소됩니다.
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+    c.querySelectorAll("[data-f]").forEach(x=>{
+      const k=x.dataset.f;
+      const ev=k==="visible"?"change":"input";
+      x.addEventListener(ev,()=>{
+        p[k]=k==="visible"?x.checked:x.value;
+        if(k==="image")c.querySelector("[data-img]").src=adminImageSrc(p.image);
+        D();
+      });
+    });
+
+    c.querySelector("[data-file]").onchange=e=>{
+      const q=e.target.files?.[0];
+      if(!q)return;
+      pendingFiles.set("popups.items."+p.id+".image",q);
+      c.querySelector("[data-img]").src=URL.createObjectURL(q);
+      D();
+    };
+
+    c.querySelector("[data-del]").onclick=()=>{
+      if(confirm(`팝업 ${i+1}을 삭제할까요?`)){
+        pendingFiles.delete("popups.items."+p.id+".image");
+        current["popups.items"].splice(i,1);
+        popupItems();
+        D();
+      }
+    };
+
+    c.querySelector("[data-up]").onclick=()=>{
+      if(i>0){
+        const a=current["popups.items"];
+        [a[i-1],a[i]]=[a[i],a[i-1]];
+        popupItems();
+        D();
+      }
+    };
+
+    c.querySelector("[data-down]").onclick=()=>{
+      const a=current["popups.items"];
+      if(i<a.length-1){
+        [a[i+1],a[i]]=[a[i],a[i+1]];
+        popupItems();
+        D();
+      }
+    };
+
+    h.append(c);
+  });
+}
+
 function fresh(){return{id:"store-"+Date.now(),visible:true,region:"REGION",name:"신규 매장",desc:"매장 설명을 입력해주세요.",image:"assets/images/brand-shelf.webp",address:"주소 입력",hours:"영업시간 입력",phone:"",map_url:"",tags:["만화","OTT"]}}
 function stores(){let h=$("#storeManager");if(!h)return;h.innerHTML="";(current["stores.items"]||[]).forEach((s,i)=>{let c=document.createElement("div");c.className="store-edit-card";c.innerHTML=`<div class="store-edit-top"><div class="store-edit-title"><span class="store-index">${i+1}</span><span>${E(s.name)}</span></div><div class="store-actions"><button data-up>↑ 위로</button><button data-down>↓ 아래로</button><button class="danger" data-del>삭제</button></div></div><div class="store-fields"><div><label>노출 여부</label><div class="store-visible-row"><input type="checkbox" data-f="visible" ${B(s.visible)?"checked":""}> 홈페이지에 표시</div></div><div><label>지역 표기</label><input data-f="region" value="${E(s.region)}"></div><div><label>매장명</label><input data-f="name" value="${E(s.name)}"></div><div><label>전화번호</label><input data-f="phone" value="${E(s.phone)}"></div><div class="wide"><label>매장 설명</label><textarea data-f="desc">${E(s.desc)}</textarea></div><div><label>주소</label><input data-f="address" value="${E(s.address)}"></div><div><label>영업시간</label><input data-f="hours" value="${E(s.hours)}"></div><div><label>네이버 플레이스 링크</label><input data-f="map_url" type="url" placeholder="https://naver.me/..." value="${E(s.map_url)}"><small style="display:block;margin-top:6px;color:#777">입력하면 홈페이지 매장명을 눌러 네이버 플레이스로 이동합니다.</small></div><div><label>태그</label><input data-f="tags" value="${E((s.tags||[]).join(", "))}"></div><div class="wide"><label>매장 이미지</label><div class="store-image-row"><div class="store-image-preview"><img data-img src="${E(adminImageSrc(s.image))}"></div><div class="store-image-controls"><input data-f="image" value="${E(s.image)}"><input type="file" accept="image/*" data-file></div></div></div></div>`;
  c.querySelectorAll("[data-f]").forEach(x=>{let k=x.dataset.f,ev=k==="visible"?"change":"input";x.addEventListener(ev,()=>{s[k]=k==="visible"?x.checked:k==="tags"?x.value.split(",").map(v=>v.trim()).filter(Boolean):x.value;if(k==="name")c.querySelector(".store-edit-title span:last-child").textContent=s.name;if(k==="image")c.querySelector("[data-img]").src=adminImageSrc(s.image);D()})});c.querySelector("[data-file]").onchange=e=>{let q=e.target.files?.[0];if(!q)return;pendingFiles.set("stores.items."+s.id+".image",q);c.querySelector("[data-img]").src=URL.createObjectURL(q);D()};c.querySelector("[data-del]").onclick=()=>{if(confirm(`'${s.name}'을 삭제할까요?`)){current["stores.items"].splice(i,1);stores();D()}};c.querySelector("[data-up]").onclick=()=>{if(i>0){let a=current["stores.items"];[a[i-1],a[i]]=[a[i],a[i-1]];stores();D()}};c.querySelector("[data-down]").onclick=()=>{let a=current["stores.items"];if(i<a.length-1){[a[i+1],a[i]]=[a[i],a[i+1]];stores();D()}};h.append(c)})}
-function render(d){current=Object.assign({},window.DODO_DEFAULT_CONTENT||{},C(d||{}));if(!Array.isArray(current["stores.items"]))current["stores.items"]=[];pendingFiles.clear();D(false);let r=$("#groups"),side=$("#sideLinks");r.innerHTML="";side.innerHTML="";let i=0;Object.entries(window.DODO_SCHEMA).forEach(([n,fs])=>{let id="g"+i++,b=document.createElement("button");b.className="side-link";b.textContent=n;b.onclick=()=>document.getElementById(id).scrollIntoView({behavior:"smooth"});side.append(b);let g=document.createElement("section");g.className="group";g.id=id;g.innerHTML=`<div class="gh"><h2>${E(n)}</h2><span>${fs.length}개 항목</span></div><div class="fields"></div>`;fs.forEach(x=>g.querySelector(".fields").append(field(...x)));r.append(g)});let b=document.createElement("button");b.className="side-link";b.textContent="매장 추가 / 관리";b.onclick=()=>$("#storeGroup").scrollIntoView({behavior:"smooth"});side.append(b);let g=document.createElement("section");g.className="store-manager";g.id="storeGroup";g.innerHTML=`<div class="store-manager-head"><div><h2>매장 추가 / 관리</h2><div style="font-size:10px;color:#7d8580;margin-top:3px">신규 매장은 원하는 만큼 계속 추가할 수 있습니다.</div></div><button id="addStore" class="add-store-btn">+ 신규 매장 추가</button></div><div id="storeManager" class="store-list"></div>`;r.append(g);$("#addStore").onclick=()=>{current["stores.items"].push(fresh());stores();D()};stores()}
+function render(d){
+  current=Object.assign({},window.DODO_DEFAULT_CONTENT||{},C(d||{}));
+
+  if(!Array.isArray(current["stores.items"]))current["stores.items"]=[];
+
+  // V22/V23의 고정 팝업 1~3 데이터를 무제한 팝업 목록으로 자동 승계
+  if(!Array.isArray(current["popups.items"])){
+    current["popups.items"]=legacyPopupItems(current);
+  }
+
+  pendingFiles.clear();
+  D(false);
+
+  let r=$("#groups"),side=$("#sideLinks");
+  r.innerHTML="";
+  side.innerHTML="";
+
+  let i=0;
+  Object.entries(window.DODO_SCHEMA).forEach(([n,fs])=>{
+    let id="g"+i++;
+    let b=document.createElement("button");
+    b.className="side-link";
+    b.textContent=n;
+    b.onclick=()=>document.getElementById(id).scrollIntoView({behavior:"smooth"});
+    side.append(b);
+
+    let g=document.createElement("section");
+    g.className="group";
+    g.id=id;
+    g.innerHTML=`<div class="gh"><h2>${E(n)}</h2><span>${fs.length}개 항목</span></div><div class="fields"></div>`;
+    fs.forEach(x=>g.querySelector(".fields").append(field(...x)));
+    r.append(g);
+  });
+
+  // 무제한 팝업 관리
+  let pb=document.createElement("button");
+  pb.className="side-link";
+  pb.textContent="팝업 추가 / 관리";
+  pb.onclick=()=>$("#popupGroup").scrollIntoView({behavior:"smooth"});
+  side.append(pb);
+
+  let pg=document.createElement("section");
+  pg.className="store-manager";
+  pg.id="popupGroup";
+  pg.innerHTML=`
+    <div class="store-manager-head">
+      <div>
+        <h2>팝업 추가 / 관리</h2>
+        <div style="font-size:10px;color:#7d8580;margin-top:3px">
+          팝업은 원하는 만큼 계속 추가할 수 있습니다. 체크된 팝업만 메인 홈페이지 좌측 상단에 표시됩니다.
+        </div>
+      </div>
+      <button id="addPopup" class="add-store-btn">+ 신규 팝업 추가</button>
+    </div>
+    <div id="popupManager" class="store-list"></div>`;
+  r.append(pg);
+
+  $("#addPopup").onclick=()=>{
+    current["popups.items"].push(freshPopup());
+    popupItems();
+    D();
+  };
+  popupItems();
+
+  // 매장 관리
+  let b=document.createElement("button");
+  b.className="side-link";
+  b.textContent="매장 추가 / 관리";
+  b.onclick=()=>$("#storeGroup").scrollIntoView({behavior:"smooth"});
+  side.append(b);
+
+  let g=document.createElement("section");
+  g.className="store-manager";
+  g.id="storeGroup";
+  g.innerHTML=`
+    <div class="store-manager-head">
+      <div>
+        <h2>매장 추가 / 관리</h2>
+        <div style="font-size:10px;color:#7d8580;margin-top:3px">신규 매장은 원하는 만큼 계속 추가할 수 있습니다.</div>
+      </div>
+      <button id="addStore" class="add-store-btn">+ 신규 매장 추가</button>
+    </div>
+    <div id="storeManager" class="store-list"></div>`;
+  r.append(g);
+
+  $("#addStore").onclick=()=>{
+    current["stores.items"].push(fresh());
+    stores();
+    D();
+  };
+  stores();
+}
 async function load(){
   let d=window.DODO_DEFAULT_CONTENT||{};
 
@@ -156,6 +383,15 @@ async function saveHomepage(){
     S("저장 요청을 준비하고 있습니다...");
 
     const d=collect();
+
+    // V24부터는 무제한 배열만 저장. 이전 V22/V23 고정 팝업 키는 제거합니다.
+    [
+      "popup.enabled","popup.image",
+      "popup1.enabled","popup1.image",
+      "popup2.enabled","popup2.image",
+      "popup3.enabled","popup3.image"
+    ].forEach(k=>delete d[k]);
+
     const images=[];
 
     // 선택한 이미지는 브라우저에서 먼저 자동 최적화한 뒤 Worker/GitHub로 업로드
@@ -176,6 +412,10 @@ async function saveHomepage(){
         const id=k.split(".")[2];
         const st=d["stores.items"]?.find(x=>x.id===id);
         if(st) st.image=path;
+      }else if(k.startsWith("popups.items.")){
+        const id=k.split(".")[2];
+        const pop=d["popups.items"]?.find(x=>x.id===id);
+        if(pop) pop.image=path;
       }else{
         d[k]=path;
       }

@@ -148,191 +148,268 @@
   }
 
   function ensurePopupStyles(){
-    if(document.getElementById("dodo-popup-style-v22"))return;
+    if(document.getElementById("dodo-popup-style-v24"))return;
+    document.getElementById("dodo-popup-style-v22")?.remove();
+    document.getElementById("dodo-popup-style-v23")?.remove();
+
     const st=document.createElement("style");
-    st.id="dodo-popup-style-v22";
+    st.id="dodo-popup-style-v24";
     st.textContent=`
-      .dodo-popup-overlay{
-        position:fixed; inset:0; z-index:99999;
-        display:flex; align-items:center; justify-content:center;
-        padding:22px;
-        background:rgba(10,20,16,.58);
-        backdrop-filter:blur(3px);
-        -webkit-backdrop-filter:blur(3px);
-      }
-      .dodo-popup{
-        position:relative;
-        width:min(560px,92vw);
-        max-height:90vh;
-        background:#fff;
-        border-radius:18px;
-        box-shadow:0 22px 80px rgba(0,0,0,.34);
-        overflow:hidden;
-        animation:dodoPopupIn .2s ease-out;
-      }
-      .dodo-popup-image-wrap{
-        width:100%;
-        max-height:calc(90vh - 54px);
+      .dodo-popup-layer{
+        position:fixed;
+        z-index:99999;
+        top:16px;
+        left:16px;
+        right:16px;
         display:flex;
-        align-items:center;
-        justify-content:center;
+        flex-wrap:wrap;
+        align-items:flex-start;
+        align-content:flex-start;
+        gap:12px;
+        pointer-events:none;
+      }
+
+      .dodo-popup-card{
+        position:relative;
+        width:max-content;
+        max-width:calc(100vw - 32px);
         background:#fff;
+        border-radius:14px;
+        box-shadow:0 14px 44px rgba(0,0,0,.28);
+        overflow:hidden;
+        pointer-events:auto;
+        animation:dodoPopupIn .18s ease-out;
       }
-      .dodo-popup-image{
-        width:100%;
-        max-height:calc(90vh - 54px);
-        object-fit:contain;
+
+      .dodo-popup-image-wrap{
         display:block;
+        width:max-content;
+        max-width:calc(100vw - 32px);
+        background:#fff;
+        line-height:0;
       }
+
+      .dodo-popup-image{
+        display:block;
+        width:auto;
+        height:auto;
+        max-width:min(620px,calc(100vw - 32px));
+        max-height:calc(100vh - 92px);
+        object-fit:contain;
+      }
+
       .dodo-popup-close{
         position:absolute;
-        top:10px; right:10px;
-        z-index:2;
-        width:36px; height:36px;
-        border:0; border-radius:50%;
-        background:rgba(17,34,29,.82);
+        top:8px;
+        right:8px;
+        z-index:3;
+        width:34px;
+        height:34px;
+        border:0;
+        border-radius:50%;
+        background:rgba(17,34,29,.84);
         color:#fff;
-        font-size:23px;
-        line-height:36px;
+        font-size:22px;
+        line-height:34px;
         cursor:pointer;
         display:grid;
         place-items:center;
         box-shadow:0 2px 10px rgba(0,0,0,.18);
       }
+
       .dodo-popup-footer{
-        height:54px;
+        min-height:46px;
         display:flex;
         align-items:center;
         justify-content:center;
+        padding:0 14px;
         border-top:1px solid rgba(20,40,32,.10);
         background:#fff;
       }
+
       .dodo-popup-hide24{
+        width:100%;
         border:0;
         background:transparent;
         color:#31463f;
         font:inherit;
-        font-size:14px;
+        font-size:13px;
         font-weight:700;
         cursor:pointer;
-        padding:14px 24px;
+        padding:13px 8px;
       }
+
       .dodo-popup-hide24:hover,
       .dodo-popup-hide24:focus-visible{
         text-decoration:underline;
         text-underline-offset:3px;
       }
+
       @keyframes dodoPopupIn{
-        from{opacity:0;transform:translateY(8px) scale(.985)}
+        from{opacity:0;transform:translateY(6px) scale(.99)}
         to{opacity:1;transform:none}
       }
+
       @media(max-width:640px){
-        .dodo-popup-overlay{padding:14px}
-        .dodo-popup{width:min(94vw,520px);border-radius:14px}
-        .dodo-popup-close{width:34px;height:34px;font-size:21px}
+        .dodo-popup-layer{
+          top:10px;
+          left:10px;
+          right:10px;
+          gap:10px;
+        }
+        .dodo-popup-card,
+        .dodo-popup-image-wrap{
+          max-width:calc(100vw - 20px);
+        }
+        .dodo-popup-image{
+          max-width:calc(100vw - 20px);
+          max-height:calc(100vh - 76px);
+        }
+        .dodo-popup-close{
+          width:32px;
+          height:32px;
+          font-size:20px;
+        }
       }
     `;
     document.head.appendChild(st);
   }
 
-  function popupStorageKey(src){
-    // 이미지를 교체하면 새 팝업으로 인식해서 즉시 다시 보여줍니다.
+  function popupStorageKey(id,src){
     let hash=0;
-    for(let i=0;i<src.length;i++)hash=((hash<<5)-hash+src.charCodeAt(i))|0;
-    return "dodo_popup_hide_until_v22_"+Math.abs(hash);
+    const raw=String(id||"popup")+"|"+String(src||"");
+    for(let i=0;i<raw.length;i++)hash=((hash<<5)-hash+raw.charCodeAt(i))|0;
+    return "dodo_popup_hide_until_v24_"+Math.abs(hash);
   }
 
-  function closePopup(overlay){
-    if(!overlay)return;
-    overlay.remove();
-    document.documentElement.style.overflow="";
+  function legacyPopupItems(d){
+    const items=[];
+    for(let i=1;i<=3;i++){
+      const enabled=(i===1 && d["popup1.enabled"]===undefined)
+        ? d["popup.enabled"]
+        : d[`popup${i}.enabled`];
+
+      const image=(i===1 && !String(d["popup1.image"]||"").trim())
+        ? d["popup.image"]
+        : d[`popup${i}.image`];
+
+      const src=String(image||"").trim();
+      if(asBool(enabled) && src){
+        items.push({id:"popup-legacy-"+i,visible:true,image:src});
+      }
+    }
+    return items;
+  }
+
+  function getPopupItems(d){
+    const raw=Array.isArray(d["popups.items"])
+      ? d["popups.items"]
+      : legacyPopupItems(d);
+
+    return raw
+      .filter(p=>p && asBool(p.visible) && String(p.image||"").trim())
+      .map((p,i)=>{
+        const src=String(p.image||"").trim();
+        const id=String(p.id||("popup-"+i));
+        const key=popupStorageKey(id,src);
+        let hideUntil=0;
+        try{hideUntil=Number(localStorage.getItem(key)||0)}catch(e){}
+        return {id,src,key,hideUntil};
+      })
+      .filter(p=>p.hideUntil<=Date.now());
+  }
+
+  function removePopupCard(card){
+    if(!card)return;
+    const layer=card.parentElement;
+    card.remove();
+    if(layer && !layer.children.length)layer.remove();
   }
 
   function applyPopup(d){
     if(!isHomePage())return;
 
-    // 기존 팝업이 있으면 먼저 정리
-    const old=document.getElementById("dodo-popup-overlay");
-    if(old)old.remove();
+    document.getElementById("dodo-popup-layer")?.remove();
 
-    const enabled=asBool(d["popup.enabled"]);
-    const src=String(d["popup.image"]||"").trim();
-    if(!enabled || !src)return;
-
-    const key=popupStorageKey(src);
-    let hideUntil=0;
-    try{ hideUntil=Number(localStorage.getItem(key)||0); }catch(e){}
-    if(hideUntil>Date.now())return;
+    const items=getPopupItems(d);
+    if(!items.length)return;
 
     ensurePopupStyles();
 
-    const overlay=document.createElement("div");
-    overlay.id="dodo-popup-overlay";
-    overlay.className="dodo-popup-overlay";
-    overlay.setAttribute("role","dialog");
-    overlay.setAttribute("aria-modal","true");
-    overlay.setAttribute("aria-label","홈페이지 팝업");
+    const layer=document.createElement("div");
+    layer.id="dodo-popup-layer";
+    layer.className="dodo-popup-layer";
+    layer.setAttribute("aria-label","홈페이지 팝업 영역");
+    document.body.appendChild(layer);
 
-    const box=document.createElement("div");
-    box.className="dodo-popup";
+    items.forEach((item)=>{
+      const card=document.createElement("section");
+      card.className="dodo-popup-card";
+      card.setAttribute("role","dialog");
+      card.setAttribute("aria-label","홈페이지 팝업");
 
-    const close=document.createElement("button");
-    close.type="button";
-    close.className="dodo-popup-close";
-    close.setAttribute("aria-label","팝업 닫기");
-    close.textContent="×";
-    close.onclick=()=>closePopup(overlay);
+      const close=document.createElement("button");
+      close.type="button";
+      close.className="dodo-popup-close";
+      close.setAttribute("aria-label","팝업 닫기");
+      close.textContent="×";
 
-    const wrap=document.createElement("div");
-    wrap.className="dodo-popup-image-wrap";
+      // 일반 X 닫기는 어떤 차단 기록도 저장하지 않습니다.
+      // 따라서 새로고침하거나 다시 접속하면 팝업이 다시 표시됩니다.
+      close.onclick=()=>removePopupCard(card);
 
-    const img=document.createElement("img");
-    img.className="dodo-popup-image";
-    img.alt="";
-    img.decoding="async";
-    img.loading="eager";
+      const wrap=document.createElement("div");
+      wrap.className="dodo-popup-image-wrap";
 
-    const footer=document.createElement("div");
-    footer.className="dodo-popup-footer";
+      const img=document.createElement("img");
+      img.className="dodo-popup-image";
+      img.alt="";
+      img.decoding="async";
+      img.loading="eager";
 
-    const hide24=document.createElement("button");
-    hide24.type="button";
-    hide24.className="dodo-popup-hide24";
-    hide24.textContent="24시간 동안 보지 않기";
-    hide24.onclick=()=>{
-      try{
-        localStorage.setItem(key,String(Date.now()+24*60*60*1000));
-      }catch(e){}
-      closePopup(overlay);
-    };
+      const footer=document.createElement("div");
+      footer.className="dodo-popup-footer";
 
-    // 이미지가 실제 로드된 뒤에만 팝업 표시
-    img.onload=()=>{
-      if(!document.body.contains(overlay)){
-        wrap.appendChild(img);
-        footer.appendChild(hide24);
-        box.append(close,wrap,footer);
-        overlay.appendChild(box);
-        document.body.appendChild(overlay);
-        document.documentElement.style.overflow="hidden";
-        setTimeout(()=>close.focus(),0);
-      }
-    };
-    img.onerror=()=>{ /* 이미지 실패 시 팝업 자체를 띄우지 않음 */ };
-
-    // CMS 업로드 직후 GitHub Pages 반영 지연도 기존 이미지 로더와 동일하게 재시도
-    const isCms=/^assets\/images\/cms\/[A-Za-z0-9._-]+$/.test(src);
-    let attempt=0;
-    const delays=[0,900,1800,3500];
-    const load=()=>{
-      const url=attempt===0?src:src+(src.includes("?")?"&":"?")+"retry="+Date.now()+"-"+attempt;
-      img.onerror=()=>{
-        attempt++;
-        if(isCms && attempt<delays.length)setTimeout(load,delays[attempt]);
+      const hide24=document.createElement("button");
+      hide24.type="button";
+      hide24.className="dodo-popup-hide24";
+      hide24.textContent="24시간 동안 보지 않기";
+      hide24.onclick=()=>{
+        try{
+          localStorage.setItem(item.key,String(Date.now()+24*60*60*1000));
+        }catch(e){}
+        removePopupCard(card);
       };
-      img.src=url;
-    };
-    load();
+
+      footer.appendChild(hide24);
+      card.append(close,wrap,footer);
+
+      const isCms=/^assets\/images\/cms\/[A-Za-z0-9._-]+$/.test(item.src);
+      let attempt=0;
+      const delays=[0,900,1800,3500];
+
+      img.onload=()=>{
+        wrap.replaceChildren(img);
+        if(!layer.contains(card))layer.appendChild(card);
+      };
+
+      const load=()=>{
+        const url=attempt===0
+          ? item.src
+          : item.src+(item.src.includes("?")?"&":"?")+"retry="+Date.now()+"-"+attempt;
+
+        img.onerror=()=>{
+          attempt++;
+          if(isCms && attempt<delays.length){
+            setTimeout(load,delays[attempt]);
+          }
+        };
+
+        img.src=url;
+      };
+
+      load();
+    });
   }
 
   function apply(d){
