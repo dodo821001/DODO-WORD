@@ -220,5 +220,21 @@
   "franchise.privacy_text": "개인정보 수집 및 이용에 동의합니다.",
   "franchise.privacy_detail": "수집항목: 이름, 연락처, 희망지역, 점포 보유 여부, 예상 평수, 예상 오픈 시기, 문의내용 / 이용목적: 창업상담 및 문의 회신 / 보유기간: 상담 종료 후 1년",
   "global.logo_image": "assets/images/cms/cms-1793149776890-a2nvr.webp",
-  "popups.items": []
+  "popups.items": [
+    {
+      "id": "popup-1793279557401-cdz2t",
+      "visible": true,
+      "image": "assets/images/cms/cms-1793279573518-uddc0.webp"
+    },
+    {
+      "id": "popup-1793279561932-2bhrt",
+      "visible": true,
+      "image": "assets/images/cms/cms-1793279573690-1gi4l.webp"
+    },
+    {
+      "id": "popup-1793279563308-9jz4x",
+      "visible": true,
+      "image": "assets/images/cms/cms-1793279573855-6yn94.webp"
+    }
+  ]
 }
