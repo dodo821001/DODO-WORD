@@ -403,7 +403,6 @@
       img.alt="";
       img.decoding="async";
       img.loading="eager";
-      try{img.fetchPriority="high"}catch(e){}
 
       const hide24=document.createElement("button");
       hide24.type="button";
