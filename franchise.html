@@ -132,4 +132,117 @@ html .brand-seal.logo-resolved.use-default-logo{
   </div>
   <div class="footer-bottom" data-cms="global.footer">DODO F&B · MANGA CAFE DODO · DODO WORLD</div>
 </div></footer>
-<script src="assets/default-content.js"></script><script src="assets/cms.js?v=20261028-v14-logo-flash"></script><script src="assets/app.js"></script></body></html>
+<script src="assets/default-content.js"></script><script src="assets/cms.js?v=20261028-v14-logo-flash"></script><script src="assets/app.js"></script>
+<script>
+/* DODO franchise submit hard-fix
+   - 현재 페이지에서 직접 submit을 처리
+   - app.js 캐시/이벤트 상태와 무관하게 동작
+   - CMS의 Web App URL을 직접 재조회 가능
+*/
+(function(){
+  var form=document.getElementById('franchiseForm');
+  if(!form || form.dataset.dodoSubmitHardFix==='1') return;
+  form.dataset.dodoSubmitHardFix='1';
+
+  var statusBox=document.getElementById('inquiryStatus');
+  var submitBtn=document.getElementById('inquirySubmit');
+  var pageUrl=document.getElementById('inqPageUrl');
+  if(pageUrl) pageUrl.value=location.href;
+
+  function showStatus(message,type){
+    if(!statusBox) return;
+    statusBox.textContent=message;
+    statusBox.className='inquiry-status show '+type;
+  }
+  function normalizePhone(v){
+    return String(v||'').replace(/[^0-9]/g,'');
+  }
+  async function getConfig(){
+    var current=window.DODO_CURRENT_CONTENT||{};
+    if(String(current['franchise.form_endpoint']||'').trim()) return current;
+
+    try{
+      var r=await fetch('/cms-public/content?franchise='+Date.now(),{
+        method:'GET',cache:'no-store',credentials:'omit',headers:{'Accept':'application/json'}
+      });
+      if(r.ok){
+        var j=await r.json();
+        if(j && j.ok && j.content) return j.content;
+      }
+    }catch(_){ }
+
+    return window.DODO_DEFAULT_CONTENT||{};
+  }
+
+  form.addEventListener('submit',async function(e){
+    e.preventDefault();
+    e.stopImmediatePropagation();
+
+    var name=(form.elements['name']?.value||'').trim();
+    var phone=(form.elements['phone']?.value||'').trim();
+    var region=(form.elements['region']?.value||'').trim();
+    var privacy=document.getElementById('inqPrivacy');
+
+    if(!name || !phone || !region){
+      showStatus('이름, 연락처, 창업 희망 지역을 입력해주세요.','error');
+      return;
+    }
+    if(normalizePhone(phone).length<9){
+      showStatus('연락처를 다시 확인해주세요.','error');
+      return;
+    }
+    if(!privacy || !privacy.checked){
+      showStatus('개인정보 수집 및 이용에 동의해주세요.','error');
+      return;
+    }
+
+    if(submitBtn){
+      submitBtn.disabled=true;
+      submitBtn.style.opacity='.65';
+    }
+    showStatus('상담 신청을 접수하고 있습니다.','success');
+
+    try{
+      var cfg=await getConfig();
+      var endpoint=String(cfg['franchise.form_endpoint']||'').trim();
+      var successMessage=cfg['franchise.success_message']||'상담 신청이 정상적으로 접수되었습니다. 확인 후 연락드리겠습니다.';
+      var errorMessage=cfg['franchise.error_message']||'접수 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.';
+
+      if(!endpoint){
+        showStatus('상담 접수 주소가 설정되어 있지 않습니다. 관리자 페이지의 상담 접수 Web App URL을 확인해주세요.','error');
+        return;
+      }
+
+      var fd=new FormData(form);
+      fd.set('page_url',location.href);
+      fd.append('submitted_at',new Date().toISOString());
+      var body=new URLSearchParams();
+      fd.forEach(function(v,k){body.append(k,String(v));});
+
+      var controller=new AbortController();
+      var timer=setTimeout(function(){controller.abort();},15000);
+      await fetch(endpoint,{
+        method:'POST',
+        mode:'no-cors',
+        headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
+        body:body.toString(),
+        signal:controller.signal
+      });
+      clearTimeout(timer);
+
+      form.reset();
+      if(pageUrl) pageUrl.value=location.href;
+      showStatus(successMessage,'success');
+    }catch(err){
+      console.error('DODO franchise submit error',err);
+      showStatus('접수 요청을 보내지 못했습니다. 잠시 후 다시 시도해주세요.','error');
+    }finally{
+      if(submitBtn){
+        submitBtn.disabled=false;
+        submitBtn.style.opacity='';
+      }
+    }
+  },true);
+})();
+</script>
+</body></html>
