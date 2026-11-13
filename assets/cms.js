@@ -48,9 +48,10 @@
 
   function setCmsImage(el,src,key){
     if(!src)return;
-    const highPriority = ["home.v2_hero_image","home.feature3_image","cafe.hero_image","cafe.food_image"].includes(key);
+    // 첫 화면의 대표 이미지만 우선 로드하고, 나머지는 브라우저 지연 로딩에 맡깁니다.
+    const highPriority = ["home.v2_hero_image","cafe.hero_image","about.hero_image"].includes(key);
     try { el.fetchPriority = highPriority ? "high" : "auto"; } catch(e){}
-    el.loading = "eager";
+    el.loading = highPriority ? "eager" : "lazy";
     el.decoding = "async";
     el.classList.remove("cms-image-ready");
 
@@ -403,6 +404,7 @@
       img.alt="";
       img.decoding="async";
       img.loading="eager";
+      try{img.fetchPriority="low"}catch(e){}
 
       const hide24=document.createElement("button");
       hide24.type="button";
