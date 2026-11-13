@@ -1,12 +1,112 @@
 <!doctype html><html lang="ko"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#17372f">
+<!-- DODO favicon -->
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="/favicon-48x48.png" sizes="48x48">
+<link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
 <meta name="naver-site-verification" content="5713f62cc50672bc852261f6d507a5fe4f786cdb" /><title>DODO WORLD | 만화카페 도도</title>
-<link rel="stylesheet" href="assets/style.css"></head><body>
+<link rel="stylesheet" href="assets/style.css"><script>
+/* DODO V11: CMS 데이터를 문서 파싱과 동시에 먼저 불러와 이미지 표시 지연을 줄입니다. */
+window.__DODO_CMS_EARLY__ = fetch("/cms-public/content", {
+  method: "GET",
+  cache: "no-store",
+  credentials: "omit",
+  headers: {"Accept":"application/json"}
+}).then(function(r){
+  if(!r.ok) throw new Error("public cms api failed");
+  return r.json();
+}).then(function(j){
+  if(!j || !j.ok || !j.content) throw new Error("invalid cms response");
+  var d = j.content;
+  var page = (location.pathname.split("/").pop() || "index.html").toLowerCase();
+  var keys = ["global.logo_image"];
+
+  if(page === "index.html" || page === ""){
+    keys.push("home.v2_hero_image", "home.feature3_image");
+  }else if(page === "cafe.html"){
+    keys.push("cafe.hero_image", "cafe.food_image");
+  }else if(page === "about.html"){
+    keys.push("about.hero_image");
+  }else if(page === "stores.html"){
+    keys.push("stores.next_image");
+  }
+
+  window.__DODO_CMS_PRELOAD_HOLD__ = [];
+  var preloadSrcs = [];
+  keys.forEach(function(k){ if(d[k]) preloadSrcs.push(d[k]); });
+
+  // 매장 카드는 동적으로 만들어지므로 매장 이미지도 미리 내려받습니다.
+  if(page === "index.html" || page === "" || page === "stores.html"){
+    var stores = Array.isArray(d["stores.items"]) ? d["stores.items"] : [];
+    stores.slice(0,3).forEach(function(s){
+      if(s && s.image && s.visible !== false) preloadSrcs.push(s.image);
+    });
+  }
+
+  Array.from(new Set(preloadSrcs)).forEach(function(src){
+    var img = new Image();
+    img.decoding = "async";
+    try { img.fetchPriority = "high"; } catch(e){}
+    img.src = src;
+    window.__DODO_CMS_PRELOAD_HOLD__.push(img);
+  });
+
+  return d;
+}).catch(function(){
+  return null;
+});
+</script>
+<style id="dodo-logo-first-paint">
+/* V16: 첫 화면에서 기존 D가 1프레임 보이는 현상 방지 */
+html .brand-seal:not(.logo-resolved){
+  visibility:hidden !important;
+}
+html .brand-seal.logo-resolved.use-default-logo{
+  display:none !important;
+}
+</style>
+
+<style id="dodo-store-image-fit-v19">
+/* V19: 매장 카드 대표이미지 원본 3:2 비율 그대로 표시 */
+.store-card .photo{
+  width:100% !important;
+  height:auto !important;
+  aspect-ratio:3 / 2 !important;
+  overflow:hidden !important;
+  background:#f4f1e9 !important;
+}
+.store-card .photo img{
+  width:100% !important;
+  height:100% !important;
+  object-fit:contain !important;
+  object-position:center center !important;
+  display:block !important;
+}
+</style>
+
+
+<style id="dodo-naver-place-link-v21">
+/* V21: 매장명 → 네이버 플레이스 */
+.store-card h3 .store-name-link{
+  color:inherit !important;
+  text-decoration:none !important;
+  cursor:pointer;
+}
+.store-card h3 .store-name-link:hover,
+.store-card h3 .store-name-link:focus-visible{
+  text-decoration:underline !important;
+  text-underline-offset:4px;
+}
+</style>
+
+</head><body>
 <header class="navbar">
   <div class="container nav-inner">
     <a class="brand" href="index.html">
-      <span class="brand-seal">D</span>
+      <span class="brand-seal" aria-hidden="true"></span>
       <span class="brand-copy"><strong data-cms="global.site_name">DODO WORLD</strong><small data-cms="global.logo_subtitle">만화카페 도도</small></span>
     </a>
     <nav class="nav-links">
@@ -89,6 +189,4 @@
   </div>
   <div class="footer-bottom" data-cms="global.footer">DODO F&B · MANGA CAFE DODO · DODO WORLD</div>
 </div></footer>
-
-<script src="assets/default-content.js"></script><script src="assets/cms.js"></script><script src="assets/app.js"></script><script src="assets/kakao-float.js"></script>
-</body></html>
+<script src="assets/default-content.js"></script><script src="assets/cms.js?v=20261029-v27-popup-center-right"></script><script src="assets/app.js"></script></body></html>
